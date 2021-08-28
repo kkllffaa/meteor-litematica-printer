@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "addon-template",
+  "id": "meteor-litematica-printer",
   "version": "${version}",
-  "name": "Addon Template",
-  "description": "An addon template for the Meteor Addon API.",
+  "name": "meteor-litematica-printer",
+  "description": "fast printer for litematica made with meteor.",
   "authors": [
     "seasnail8169"
   ],
@@ -23,6 +23,6 @@
   "depends": {
     "java": ">=16",
     "minecraft": ">=1.17.1",
-    "meteor-client": ">0.4.3"
+    "meteor-client": ">0.4.5"
   }
 }

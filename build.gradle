@@ -14,6 +14,8 @@ repositories {
         name = "jitpack"
         url = "https://jitpack.io"
     }
+    maven { url = "https://www.cursemaven.com" }
+    maven { url 'https://masa.dy.fi/maven' }
 }
 
 dependencies {
@@ -23,7 +25,10 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Meteor
-    modImplementation "com.github.MeteorDevelopment:meteor-client:master-SNAPSHOT"
+    modImplementation "com.github.MeteorDevelopment:meteor-client:v0.4.5"
+    //litematica
+    modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
+    modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
 }
 
 processResources {

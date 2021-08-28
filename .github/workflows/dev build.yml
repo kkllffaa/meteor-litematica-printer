@@ -1,6 +1,6 @@
-name: devbuild
-on:
-  - push
+name: Dev_build
+
+on: workflow_dispatch
 jobs:
   build:
     runs-on: ubuntu-latest
