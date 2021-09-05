@@ -1,8 +1,8 @@
-package meteordevelopment.addons.template.modules;
+package com.kkllffaa.meteor_litematica_printer.modules;
 
+import com.kkllffaa.meteor_litematica_printer.Addon;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
-import meteordevelopment.addons.template.TemplateAddon;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -63,7 +63,7 @@ public class Printer extends Module {
 	
 	
 	public Printer() {
-		super(TemplateAddon.CATEGORY, "litematica-printer", "description");
+		super(Addon.CATEGORY, "litematica-printer", "description");
 	}
 	
 	private int timer = 0;

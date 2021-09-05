@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "meteordevelopment.addons.template.mixins",
+  "package": "com.kkllffaa.meteor_litematica_printer.mixins",
   "compatibilityLevel": "JAVA_16",
   "client": [],
   "injectors": {

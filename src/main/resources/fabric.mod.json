@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
+  "name": "meteor-litematica-printer",
   "id": "meteor-litematica-printer",
   "version": "${version}",
-  "name": "meteor-litematica-printer",
   "description": "fast printer for litematica made with meteor.",
   "authors": [
-    "seasnail8169"
+    "kkllffaa"
   ],
   "contact": {
-    "repo": "https://github.com/MeteorDevelopment/meteor-addon-template"
+    "repo": "https://github.com/kkllffaa/meteor-litematica-printer"
   },
-  "icon": "assets/template/icon.png",
+  "icon": "assets/meteor_litematica_printer/icon.png",
   "environment": "client",
   "entrypoints": {
     "meteor": [
-      "meteordevelopment.addons.template.TemplateAddon"
+      "com.kkllffaa.meteor_litematica_printer.Addon"
     ]
   },
   "mixins": [

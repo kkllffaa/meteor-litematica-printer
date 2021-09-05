@@ -1,6 +1,6 @@
-package meteordevelopment.addons.template;
+package com.kkllffaa.meteor_litematica_printer;
 
-import meteordevelopment.addons.template.modules.Printer;
+import com.kkllffaa.meteor_litematica_printer.modules.Printer;
 import meteordevelopment.meteorclient.MeteorAddon;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Category;
@@ -12,7 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.lang.invoke.MethodHandles;
 
-public class TemplateAddon extends MeteorAddon {
+public class Addon extends MeteorAddon {
 	public static final Logger LOG = LogManager.getLogger();
 	public static final Category CATEGORY = new Category("Printer", new ItemStack(Items.PINK_CARPET));
 
@@ -21,8 +21,9 @@ public class TemplateAddon extends MeteorAddon {
 		LOG.info("Initializing Meteor Addon Template");
 
 		// Required when using @EventHandler
-		MeteorClient.EVENT_BUS.registerLambdaFactory("meteordevelopment.addons.template", (lookupInMethod, klass) -> (MethodHandles.Lookup) lookupInMethod.invoke(null, klass, MethodHandles.lookup()));
+		MeteorClient.EVENT_BUS.registerLambdaFactory("com.kkllffaa.meteor_litematica_printer", (lookupInMethod, klass) -> (MethodHandles.Lookup) lookupInMethod.invoke(null, klass, MethodHandles.lookup()));
 
+		
 		// Modules
 		Modules.get().add(new Printer());
 	}
