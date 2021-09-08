@@ -4,6 +4,7 @@ import com.kkllffaa.meteor_litematica_printer.Addon;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.settings.SettingGroup;
@@ -14,8 +15,10 @@ import meteordevelopment.meteorclient.utils.world.BlockIterator;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.BlockState;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 public class Printer extends Module {
 	
@@ -44,7 +47,14 @@ public class Printer extends Module {
 			.sliderMax(40)
 			.build()
 	);
-	/*
+	
+	private final Setting<Boolean> breakblocks = sgGeneral.add(new BoolSetting.Builder()
+			.name("break")
+			.description("break blocks")
+			.defaultValue(false)
+			.build()
+	);
+	
 	private final Setting<Boolean> print_in_air = sgGeneral.add(new BoolSetting.Builder()
 			.name("print-in-air")
 			.description("Whether or not the printer should place blocks without anything to build on.")
@@ -58,7 +68,7 @@ public class Printer extends Module {
 			.defaultValue(false)
 			.build()
 	);
-	*/
+	
 	//endregion
 	
 	
@@ -82,20 +92,52 @@ public class Printer extends Module {
 			BlockIterator.register(printing_range.get(), printing_range.get(), (pos, blockState) -> {
 				if (!mc.player.getBlockPos().isWithinDistance(pos, printing_range.get())) return;
 				BlockState required = worldSchematic.getBlockState(pos);
-				
-				if (!required.isAir() && blockState.getBlock() != required.getBlock()) {
-					if (place(required, pos)) {
-						BlockIterator.disableCurrent();
-						timer = 0;
+				if (blockState.getBlock() != required.getBlock()) {
+					if (required.isAir()) {
+						if (print_in_air.get()) {
+							if (place(required, pos)) {
+								if (printing_delay.get() <= 0) BlockIterator.disableCurrent();
+								timer = 0;
+							}
+						}else {
+							if (canairplace(pos) && place(required, pos)) {
+								if (printing_delay.get() <= 0) BlockIterator.disableCurrent();
+								timer = 0;
+							}
+						}
+					}else {
+						if (blockState.getMaterial().isLiquid()) {
+							if (replace_fluids.get() && place(required, pos)) {
+								if (printing_delay.get() <= 0) BlockIterator.disableCurrent();
+								timer = 0;
+							}
+						}
 					}
 				}
 			});
 		}else timer++;
 	}
 	
+	private boolean canairplace(BlockPos pos) {
+		ClientWorld world = mc.world;
+		if (world == null) return false;
+		if (!world.getBlockState(pos.down()).isAir()) return true;
+		if (!world.getBlockState(pos.up()).isAir()) return true;
+		if (!world.getBlockState(pos.north()).isAir()) return true;
+		if (!world.getBlockState(pos.east()).isAir()) return true;
+		if (!world.getBlockState(pos.south()).isAir()) return true;
+		return !world.getBlockState(pos.west()).isAir();
+	}
+	
 	private boolean place(BlockState required, BlockPos pos) {
+		if (mc.player == null) return false;
 		FindItemResult result = InvUtils.find(required.getBlock().asItem());
-		if (result.found()) {
+		if (mc.player.getMainHandStack().getItem() == required.getBlock().asItem()) {
+			if (BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 0, true, true, true)) {
+				usedslot = mc.player.getInventory().selectedSlot;
+				return true;
+			}else return false;
+		}else if (result.found()) {
 			if (result.isHotbar()) {
 				if (BlockUtils.place(pos, result, false, 0, true, true, true)) {
 					usedslot = result.getSlot();
@@ -115,5 +157,12 @@ public class Printer extends Module {
 				}
 			}
 		} else return false;
+	}
+	
+	private void refill() {
+		if (mc.player == null) return;
+		if (mc.player.getInventory().getStack(usedslot).isEmpty() || mc.player.getInventory().getStack(usedslot).getCount() < 15) {
+		
+		}
 	}
 }
