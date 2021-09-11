@@ -1,6 +1,5 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import com.kkllffaa.meteor_litematica_printer.modules.Printer;
 import meteordevelopment.meteorclient.MeteorAddon;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.systems.modules.Category;
@@ -18,7 +17,7 @@ public class Addon extends MeteorAddon {
 
 	@Override
 	public void onInitialize() {
-		LOG.info("Initializing Meteor Addon Template");
+		LOG.info("Initializing litematica printer");
 
 		// Required when using @EventHandler
 		MeteorClient.EVENT_BUS.registerLambdaFactory("com.kkllffaa.meteor_litematica_printer", (lookupInMethod, klass) -> (MethodHandles.Lookup) lookupInMethod.invoke(null, klass, MethodHandles.lookup()));
