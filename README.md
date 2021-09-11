@@ -1,8 +1,3 @@
-# Meteor Addon Template
+# Meteor Litematica Printer
 
-A template to allow easy usage of the Meteor Addon API.
-
-### How to use:  
-- Clone this project
-- Use this template to create new modules/commands
-- Run the mod with Meteor.
+Fast printer to litematica mod without rubberbanding
