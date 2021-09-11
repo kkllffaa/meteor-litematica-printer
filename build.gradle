@@ -28,7 +28,6 @@ dependencies {
     modImplementation "com.github.MeteorDevelopment:meteor-client:v0.4.5"
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
-    modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
 }
 
 processResources {
