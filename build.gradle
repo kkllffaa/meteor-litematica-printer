@@ -1,3 +1,6 @@
+//file:noinspection GroovyUnusedAssignment
+//file:noinspection GroovyAssignabilityCheck
+//file:noinspection GroovyAccessibility
 plugins {
     id 'fabric-loom' version '0.8-SNAPSHOT'
     id 'maven-publish'
@@ -28,6 +31,7 @@ dependencies {
     modImplementation "com.github.MeteorDevelopment:meteor-client:v0.4.5"
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
+    modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
 }
 
 processResources {
