@@ -17,10 +17,8 @@ import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 
 import java.util.function.Supplier;
 
@@ -60,7 +58,14 @@ public class Printer extends Module {
 	
 	private final Setting<Boolean> advenced = sgGeneral.add(new BoolSetting.Builder()
 			.name("advenced")
-			.description("respect block rotation (exterimental).")
+			.description("respect block rotation.")
+			.defaultValue(false)
+			.build()
+	);
+	
+	private final Setting<Boolean> swing = sgGeneral.add(new BoolSetting.Builder()
+			.name("swign")
+			.description("swing hand when placing")
 			.defaultValue(false)
 			.build()
 	);
@@ -89,10 +94,7 @@ public class Printer extends Module {
 				BlockState required = worldSchematic.getBlockState(pos);
 				
 				if (!required.isAir() && blockState.getBlock() != required.getBlock()) {
-					if (advenced.get() ?
-							swichitem(required.getBlock().asItem(), () -> betterPlace(required, pos)) :
-							swichitem(required.getBlock().asItem(), () -> oldPlace(pos))
-					) {
+					if (swichitem(required.getBlock().asItem(), () -> place(required, pos, advenced.get(), swing.get()))) {
 						placed++;
 						if (placed >= bpt.get()) {
 							BlockIterator.disableCurrent();
@@ -105,43 +107,19 @@ public class Printer extends Module {
 		}else timer++;
 	}
 	
-	public boolean betterPlace (BlockState required, BlockPos pos) {
-		if (mc.player == null || mc.interactionManager == null || mc.world == null) return false;
-		if (!BlockUtils.canPlace(pos)) return false;
+	public boolean place(BlockState required, BlockPos pos, boolean adv, boolean _swing) {
+		if (mc.player == null || mc.world == null) return false;
 		
 		if (mc.world.isAir(pos) || mc.world.getBlockState(pos).getMaterial().isLiquid()) {
 			Direction direction = dir(required);
 			
-			if (direction == Direction.UP) {
-				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 0, false, true, false);
+			if (!adv || direction == Direction.UP) {
+				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 0, _swing, true, false);
+			}else {
+				return MyUtils.place(pos, direction, _swing);
 			}
 			
-			BlockHitResult result = new BlockHitResult(
-					//fromblockpos(pos/*.offset(Direction.UP)*/),
-					new Vec3d(pos.getX()+0.5, pos.getY()+0.5, pos.getZ()+0.5).add(direction.getOffsetX()*0.5, direction.getOffsetY()*0.5, direction.getOffsetZ()*0.5),
-					direction,
-					pos.offset(direction.getOpposite()),
-					false
-			);
-
-			//BlockUtilsAccessor.place(result, Hand.MAIN_HAND, false);
-			
-			mc.interactionManager.interactBlock(mc.player, mc.world, Hand.MAIN_HAND, result);
-			
-			return true;
 		}else return false;
-	}
-	
-	private Direction dir(BlockState state) {
-		if (state.contains(Properties.FACING)) return state.get(Properties.FACING);
-		else if (state.contains(Properties.AXIS)) return Direction.from(state.get(Properties.AXIS), Direction.AxisDirection.POSITIVE);
-		else if (state.contains(Properties.HORIZONTAL_AXIS)) return Direction.from(state.get(Properties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
-		else return Direction.UP;
-	}
-	
-	public boolean oldPlace(BlockPos pos) {
-		if (mc.player == null) return false;
-		return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 0, false, true, false);
 	}
 	
 	private boolean swichitem(Item item, Supplier<Boolean> action) {
@@ -199,5 +177,12 @@ public class Printer extends Module {
 				}else return false;
 			}else return false;
 		}else return false;
+	}
+	
+	private Direction dir(BlockState state) {
+		if (state.contains(Properties.FACING)) return state.get(Properties.FACING);
+		else if (state.contains(Properties.AXIS)) return Direction.from(state.get(Properties.AXIS), Direction.AxisDirection.POSITIVE);
+		else if (state.contains(Properties.HORIZONTAL_AXIS)) return Direction.from(state.get(Properties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
+		else return Direction.UP;
 	}
 }
