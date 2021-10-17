@@ -19,6 +19,9 @@ repositories {
     }
     maven { url = "https://www.cursemaven.com" }
     maven { url 'https://masa.dy.fi/maven' }
+    maven {
+        name = "meteor-maven"
+        url = "https://maven.meteordev.org/snapshots"}
 }
 
 dependencies {
@@ -28,7 +31,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Meteor
-    modImplementation "com.github.MeteorDevelopment:meteor-client:v0.4.5"
+    modImplementation "meteordevelopment:meteor-client:SNAPSHOT"
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
     modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
