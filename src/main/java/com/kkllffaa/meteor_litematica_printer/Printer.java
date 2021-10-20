@@ -2,14 +2,16 @@ package com.kkllffaa.meteor_litematica_printer;
 
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
+import meteordevelopment.meteorclient.events.render.Render2DEvent;
+import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
-import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.IntSetting;
-import meteordevelopment.meteorclient.settings.Setting;
-import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.renderer.ShapeMode;
+import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.render.color.Color;
+import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockIterator;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
@@ -17,9 +19,12 @@ import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
+import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class Printer extends Module {
@@ -33,7 +38,7 @@ public class Printer extends Module {
 			.name("printing-range")
 			.description("Printing block place range.")
 			.defaultValue(2)
-			.min(1).sliderMin(0)
+			.min(1).sliderMin(1)
 			.max(6).sliderMax(6)
 			.build()
 	);
@@ -58,24 +63,49 @@ public class Printer extends Module {
 
 	private final Setting<Boolean> advenced = sgGeneral.add(new BoolSetting.Builder()
 			.name("advanced")
-			.description("respect block rotation.")
+			.description("respect block rotation (places blocks in weird places only in singleplayer, multiplayer works fine).")
 			.defaultValue(false)
 			.build()
 	);
 
 	private final Setting<Boolean> swing = sgGeneral.add(new BoolSetting.Builder()
 			.name("swing")
-			.description("swing hand when placing")
+			.description("swing hand when placing.")
 			.defaultValue(false)
 			.build()
 	);
 
     private final Setting<Boolean> returnhand = sgGeneral.add(new BoolSetting.Builder()
         .name("Return slot")
-        .description("Return to old slot")
+        .description("Return to old slot.")
         .defaultValue(false)
         .build()
     );
+	
+	private final Setting<Boolean> renderblocks = sgGeneral.add(new BoolSetting.Builder()
+			.name("Render placed blocks")
+			.description("Render cube when placing block.")
+			.defaultValue(false)
+			.build()
+	);
+	
+	private final Setting<Integer> fadetime = sgGeneral.add(new IntSetting.Builder()
+			.name("Fade time")
+			.description("in ticks.")
+			.defaultValue(2)
+			.min(1).sliderMin(1)
+			.max(1000).sliderMax(100)
+			.visible(renderblocks::get)
+			.build()
+	);
+	
+	private final Setting<SettingColor> color = sgGeneral.add(new ColorSetting.Builder()
+			.name("Color")
+			.description("cubes color.")
+			.defaultValue(new SettingColor(100, 100, 100))
+			.visible(renderblocks::get)
+			.build()
+	);
 
 	//endregion
 
@@ -86,12 +116,29 @@ public class Printer extends Module {
 
 	private int timer, placed = 0;
 	private int usedslot = -1;
-
+	
+	
+	
+	private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
+	
+	@Override
+	public void onDeactivate() {
+		placed_fade.clear();
+	}
+	
 	@EventHandler @SuppressWarnings("unused")
 	private void onTick(TickEvent.Post event) {
-		if (mc.player == null) return;
+		if (mc.player == null || mc.world == null) {
+			placed_fade.clear();
+			return;
+		}
+		
+		placed_fade.forEach(s -> s.setLeft(s.getLeft()-1));
+		placed_fade.removeIf(s -> s.getLeft() <= 0);
+		
 		WorldSchematic worldSchematic = SchematicWorldHandler.getSchematicWorld();
 		if (worldSchematic == null) {
+			placed_fade.clear();
 			toggle();
 			return;
 		}
@@ -103,6 +150,8 @@ public class Printer extends Module {
 				if (!required.isAir() && blockState.getBlock() != required.getBlock()) {
 					if (swichitem(required.getBlock().asItem(), () -> place(required, pos, advenced.get(), swing.get()))) {
 						placed++;
+						if (renderblocks.get())
+							placed_fade.add(new Pair<>(fadetime.get(), new BlockPos(pos)));
 						if (placed >= bpt.get()) {
 							BlockIterator.disableCurrent();
 							placed = 0;
@@ -191,5 +240,13 @@ public class Printer extends Module {
 		else if (state.contains(Properties.AXIS)) return Direction.from(state.get(Properties.AXIS), Direction.AxisDirection.POSITIVE);
 		else if (state.contains(Properties.HORIZONTAL_AXIS)) return Direction.from(state.get(Properties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
 		else return Direction.UP;
+	}
+	
+	@EventHandler @SuppressWarnings("unused")
+	private void onRender(Render3DEvent event) {
+		placed_fade.forEach(s -> {
+			Color a = new Color(color.get().r, color.get().g, color.get().b, (int) (((float)s.getLeft() / (float)fadetime.get())*color.get().a));
+			event.renderer.box(s.getRight(), a, null, ShapeMode.Sides, 0);
+		});
 	}
 }
