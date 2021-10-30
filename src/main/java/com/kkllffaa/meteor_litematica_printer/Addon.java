@@ -1,7 +1,7 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import meteordevelopment.meteorclient.MeteorAddon;
 import meteordevelopment.meteorclient.MeteorClient;
+import meteordevelopment.meteorclient.addons.MeteorAddon;
 import meteordevelopment.meteorclient.systems.modules.Category;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import net.minecraft.item.ItemStack;
@@ -22,7 +22,7 @@ public class Addon extends MeteorAddon {
 		// Required when using @EventHandler
 		MeteorClient.EVENT_BUS.registerLambdaFactory("com.kkllffaa.meteor_litematica_printer", (lookupInMethod, klass) -> (MethodHandles.Lookup) lookupInMethod.invoke(null, klass, MethodHandles.lookup()));
 
-		
+
 		// Modules
 		Modules.get().add(new Printer());
 	}
