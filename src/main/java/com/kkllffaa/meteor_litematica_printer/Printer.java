@@ -1,5 +1,6 @@
 package com.kkllffaa.meteor_litematica_printer;
 
+import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
@@ -145,6 +146,7 @@ public class Printer extends Module {
 		if (timer >= printing_delay.get()) {
 			BlockIterator.register(printing_range.get(), printing_range.get(), (pos, blockState) -> {
 				if (!mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) || !blockState.isAir()) return;
+				if (!DataManager.getRenderLayerRange().isPositionWithinRange(pos)) return;
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				if (!required.isAir() && blockState.getBlock() != required.getBlock()) {
