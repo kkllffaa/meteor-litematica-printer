@@ -1,6 +1,9 @@
 package com.kkllffaa.meteor_litematica_printer;
 
 import fi.dy.masa.litematica.data.DataManager;
+import fi.dy.masa.litematica.schematic.SchematicaSchematic;
+import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
+import fi.dy.masa.litematica.util.SchematicUtils;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
@@ -82,14 +85,14 @@ public class Printer extends Module {
         .defaultValue(false)
         .build()
     );
-	
+
 	private final Setting<Boolean> renderblocks = sgGeneral.add(new BoolSetting.Builder()
 			.name("Render placed blocks")
 			.description("Render cube when placing block.")
 			.defaultValue(false)
 			.build()
 	);
-	
+
 	private final Setting<Integer> fadetime = sgGeneral.add(new IntSetting.Builder()
 			.name("Fade time")
 			.description("in ticks.")
@@ -99,7 +102,7 @@ public class Printer extends Module {
 			.visible(renderblocks::get)
 			.build()
 	);
-	
+
 	private final Setting<SettingColor> color = sgGeneral.add(new ColorSetting.Builder()
 			.name("Color")
 			.description("cubes color.")
@@ -107,6 +110,13 @@ public class Printer extends Module {
 			.visible(renderblocks::get)
 			.build()
 	);
+
+    private final Setting<Boolean> rotateblocks = sgGeneral.add(new BoolSetting.Builder()
+        .name("rotate")
+        .description("Look at the blocks being placed")
+        .defaultValue(false)
+        .build()
+    );
 
 	//endregion
 
@@ -117,26 +127,26 @@ public class Printer extends Module {
 
 	private int timer, placed = 0;
 	private int usedslot = -1;
-	
-	
-	
+
+
+
 	private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
-	
+
 	@Override
 	public void onDeactivate() {
 		placed_fade.clear();
 	}
-	
+
 	@EventHandler @SuppressWarnings("unused")
 	private void onTick(TickEvent.Post event) {
 		if (mc.player == null || mc.world == null) {
 			placed_fade.clear();
 			return;
 		}
-		
+
 		placed_fade.forEach(s -> s.setLeft(s.getLeft()-1));
 		placed_fade.removeIf(s -> s.getLeft() <= 0);
-		
+
 		WorldSchematic worldSchematic = SchematicWorldHandler.getSchematicWorld();
 		if (worldSchematic == null) {
 			placed_fade.clear();
@@ -172,9 +182,9 @@ public class Printer extends Module {
 			Direction direction = dir(required);
 
 			if (!adv || direction == Direction.UP) {
-				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 0, _swing, true, false);
+				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 50, _swing, true, false);
 			}else {
-				return MyUtils.place(pos, direction, _swing);
+				return MyUtils.place(pos, direction, _swing, rotateblocks.get());
 			}
 
 		}else return false;
@@ -243,7 +253,7 @@ public class Printer extends Module {
 		else if (state.contains(Properties.HORIZONTAL_AXIS)) return Direction.from(state.get(Properties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
 		else return Direction.UP;
 	}
-	
+
 	@EventHandler @SuppressWarnings("unused")
 	private void onRender(Render3DEvent event) {
 		placed_fade.forEach(s -> {
