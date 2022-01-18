@@ -10,6 +10,7 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
+    jcenter()
     maven {
         name = "jitpack"
         url = "https://jitpack.io"
@@ -18,7 +19,12 @@ repositories {
     maven { url 'https://masa.dy.fi/maven' }
     maven {
         name = "meteor-maven"
-        url = "https://maven.meteordev.org/snapshots"}
+        url = "https://maven.meteordev.org/snapshots"
+    }
+    maven {
+        name = "meteor-maven-snapshots"
+        url = "https://maven.meteordev.org/snapshots"
+    }
 }
 
 dependencies {
