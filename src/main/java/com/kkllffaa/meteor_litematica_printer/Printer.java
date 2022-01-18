@@ -59,7 +59,7 @@ public class Printer extends Module {
 	private final Setting<Integer> bpt = sgGeneral.add(new IntSetting.Builder()
 			.name("blocks/tick")
 			.description("how many blocks place in 1 tick.")
-			.defaultValue(10)
+			.defaultValue(1)
 			.min(1).sliderMin(1)
 			.max(100).sliderMax(100)
 			.build()
@@ -210,7 +210,7 @@ public class Printer extends Module {
 			}
 		}else if (result.found()) {
 			if (result.isHotbar()) {
-				InvUtils.swap(result.getSlot(), returnhand.get());
+				InvUtils.swap(result.slot(), returnhand.get());
 				if (action.get()) {
 					usedslot = mc.player.getInventory().selectedSlot;
 					InvUtils.swap(a, returnhand.get());
@@ -222,8 +222,8 @@ public class Printer extends Module {
 			}else if (result.isMain()){
 				FindItemResult empty = InvUtils.findEmpty();
 				if (empty.found() && empty.isHotbar()) {
-					InvUtils.move().from(result.getSlot()).toHotbar(empty.getSlot());
-					InvUtils.swap(empty.getSlot(), returnhand.get());
+					InvUtils.move().from(result.slot()).toHotbar(empty.slot());
+					InvUtils.swap(empty.slot(), returnhand.get());
 					if (action.get()) {
 						usedslot = mc.player.getInventory().selectedSlot;
 						InvUtils.swap(a, returnhand.get());
@@ -233,7 +233,7 @@ public class Printer extends Module {
 						return false;
 					}
 				} else if (usedslot != -1) {
-					InvUtils.move().from(result.getSlot()).toHotbar(usedslot);
+					InvUtils.move().from(result.slot()).toHotbar(usedslot);
 					InvUtils.swap(usedslot, returnhand.get());
 					if (action.get()) {
 						InvUtils.swap(a, returnhand.get());
