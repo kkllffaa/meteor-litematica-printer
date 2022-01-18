@@ -16,10 +16,10 @@ repositories {
         url = "https://jitpack.io"
     }
     maven { url = "https://www.cursemaven.com" }
-    maven { url 'https://masa.dy.fi/maven' }
+    maven { url = 'https://masa.dy.fi/maven' }
     maven {
         name = "meteor-maven"
-        url = "https://maven.meteordev.org/snapshots"
+        url = "https://maven.meteordev.org/releases"
     }
     maven {
         name = "meteor-maven-snapshots"
