@@ -1,5 +1,6 @@
 package com.kkllffaa.meteor_litematica_printer;
 
+import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
 import meteordevelopment.meteorclient.MeteorClient;
@@ -131,49 +132,6 @@ public class Printer extends Module {
 			.visible(()->algoritm.get().applysecondsorting)
 			.build()
 	);
-	/*
-	private final Setting<YFilterMode> yfiltermode = sgGeneral.add(new EnumSetting.Builder<YFilterMode>()
-			.name("y filter mode")
-			.description("")
-			.defaultValue(YFilterMode.None)
-			.onChanged(yFilterMode -> new Object() { public void Illegalforwardreferenceworkaround() {
-				if (yFilterMode == YFilterMode.SeveralLayers && ylevel2.get() <= ylevel1.get()) {
-					ylevel2.set(ylevel1.get()+1);
-				}
-			}}.Illegalforwardreferenceworkaround())
-			.build()
-	);
-	
-	private final Setting<Integer> ylevel1 = sgGeneral.add(new IntSetting.Builder()
-			.name("y level filter height 1")
-			.description("")
-			.min(-64).sliderMin(-64)
-			.max(318).sliderMax(318)
-			.onChanged(integer -> new Object() { public void Illegalforwardreferenceworkaround() {
-				if (ylevel2.isVisible() && integer >= ylevel2.get()) {
-					ylevel1.set(ylevel2.get()-1);
-					
-				}
-			}}.Illegalforwardreferenceworkaround())
-			.visible(()->yfiltermode.get() == YFilterMode.SingleLayer || yfiltermode.get() == YFilterMode.SeveralLayers)
-			.build()
-	);
-	
-	private final Setting<Integer> ylevel2 = sgGeneral.add(new IntSetting.Builder()
-			.name("y level filter height 2")
-			.description("")
-			.min(-65).sliderMin(-65)
-			.max(319).sliderMax(319)
-			.onChanged(integer -> new Object() { public void Illegalforwardreferenceworkaround() {
-				if (integer <= ylevel1.get()) {
-					ylevel2.set(ylevel1.get()+1);
-				}
-			}}.Illegalforwardreferenceworkaround())
-			.visible(()->yfiltermode.get() == YFilterMode.SeveralLayers)
-			.build()
-	);
-	*/
-	
 	
 
 	//endregion
@@ -222,7 +180,9 @@ public class Printer extends Module {
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				
-				if (mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) && blockState.isAir() && !required.isAir() && blockState.getBlock() != required.getBlock()) {
+				if (mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) &&
+						blockState.isAir() && !required.isAir() && blockState.getBlock() != required.getBlock() &&
+						DataManager.getRenderLayerRange().isPositionWithinRange(pos)) {
 					tosort.add(new BlockPos(pos));
 				}
 			});
@@ -382,10 +342,4 @@ public class Printer extends Module {
 		}
 	}
 	
-	@SuppressWarnings("unused")
-	public enum YFilterMode {
-		None,
-		SingleLayer,
-		SeveralLayers
-	}
 }
