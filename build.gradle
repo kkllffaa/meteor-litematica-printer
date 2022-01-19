@@ -1,3 +1,5 @@
+//file:noinspection JCenterRepository
+//file:noinspection GrDeprecatedAPIUsage
 plugins {
     id 'fabric-loom' version '0.10-SNAPSHOT'
     id 'maven-publish'
@@ -16,7 +18,7 @@ repositories {
         url = "https://jitpack.io"
     }
     maven { url = "https://www.cursemaven.com" }
-    maven { url = 'https://masa.dy.fi/maven' }
+    maven { url = "https://masa.dy.fi/maven" }
     maven {
         name = "meteor-maven"
         url = "https://maven.meteordev.org/releases"
@@ -37,7 +39,10 @@ dependencies {
     modImplementation "meteordevelopment:meteor-client:${project.meteor_version}"
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
-    modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
+    //modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
+
+
+    modImplementation "fi.dy.masa.malilib:malilib-fabric-1.18.0:0.10.0-dev.26" //litematica uses old version
 }
 
 processResources {

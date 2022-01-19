@@ -1,17 +1,14 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import fi.dy.masa.litematica.data.DataManager;
-import fi.dy.masa.litematica.schematic.SchematicaSchematic;
-import fi.dy.masa.litematica.schematic.placement.SchematicPlacement;
-import fi.dy.masa.litematica.util.SchematicUtils;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
-import meteordevelopment.meteorclient.events.render.Render2DEvent;
+import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.render.color.Color;
@@ -26,8 +23,10 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3i;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -40,7 +39,7 @@ public class Printer extends Module {
 
 	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-range")
-			.description("Printing block place range.")
+			.description("printing block place range.")
 			.defaultValue(2)
 			.min(1).sliderMin(1)
 			.max(6).sliderMax(6)
@@ -49,7 +48,7 @@ public class Printer extends Module {
 
 	private final Setting<Integer> printing_delay = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-delay")
-			.description("Delay between printing blocks in ticks.")
+			.description("delay between printing blocks in ticks.")
 			.defaultValue(2)
 			.min(0).sliderMin(0)
 			.max(100).sliderMax(40)
@@ -80,21 +79,21 @@ public class Printer extends Module {
 	);
 
     private final Setting<Boolean> returnhand = sgGeneral.add(new BoolSetting.Builder()
-        .name("Return slot")
-        .description("Return to old slot.")
-        .defaultValue(false)
-        .build()
+			.name("return slot")
+			.description("return to old slot.")
+			.defaultValue(false)
+			.build()
     );
 
 	private final Setting<Boolean> renderblocks = sgGeneral.add(new BoolSetting.Builder()
-			.name("Render placed blocks")
-			.description("Render cube when placing block.")
+			.name("render placed blocks")
+			.description("render cube when placing block.")
 			.defaultValue(false)
 			.build()
 	);
 
 	private final Setting<Integer> fadetime = sgGeneral.add(new IntSetting.Builder()
-			.name("Fade time")
+			.name("fade time")
 			.description("in ticks.")
 			.defaultValue(2)
 			.min(1).sliderMin(1)
@@ -104,7 +103,7 @@ public class Printer extends Module {
 	);
 
 	private final Setting<SettingColor> color = sgGeneral.add(new ColorSetting.Builder()
-			.name("Color")
+			.name("color")
 			.description("cubes color.")
 			.defaultValue(new SettingColor(100, 100, 100))
 			.visible(renderblocks::get)
@@ -112,66 +111,156 @@ public class Printer extends Module {
 	);
 
     private final Setting<Boolean> rotateblocks = sgGeneral.add(new BoolSetting.Builder()
-        .name("rotate")
-        .description("Look at the blocks being placed")
-        .defaultValue(false)
-        .build()
+			.name("rotate")
+			.description("look at the blocks being placed.")
+			.defaultValue(false)
+			.build()
     );
+    
+    private final Setting<SortAlgoritm> algoritm = sgGeneral.add(new EnumSetting.Builder<SortAlgoritm>()
+			.name("sorting mode")
+			.description("The blocks you want to place first.")
+			.defaultValue(SortAlgoritm.None)
+			.build()
+	);
+    
+    private final Setting<SortingSecond> secondalgoritn = sgGeneral.add(new EnumSetting.Builder<SortingSecond>()
+			.name("second sorting mode")
+			.description("second pass of sorting eg. place first blocks higher and closest to you.")
+			.defaultValue(SortingSecond.None)
+			.visible(()->algoritm.get().applysecondsorting)
+			.build()
+	);
+	/*
+	private final Setting<YFilterMode> yfiltermode = sgGeneral.add(new EnumSetting.Builder<YFilterMode>()
+			.name("y filter mode")
+			.description("")
+			.defaultValue(YFilterMode.None)
+			.onChanged(yFilterMode -> new Object() { public void Illegalforwardreferenceworkaround() {
+				if (yFilterMode == YFilterMode.SeveralLayers && ylevel2.get() <= ylevel1.get()) {
+					ylevel2.set(ylevel1.get()+1);
+				}
+			}}.Illegalforwardreferenceworkaround())
+			.build()
+	);
+	
+	private final Setting<Integer> ylevel1 = sgGeneral.add(new IntSetting.Builder()
+			.name("y level filter height 1")
+			.description("")
+			.min(-64).sliderMin(-64)
+			.max(318).sliderMax(318)
+			.onChanged(integer -> new Object() { public void Illegalforwardreferenceworkaround() {
+				if (ylevel2.isVisible() && integer >= ylevel2.get()) {
+					ylevel1.set(ylevel2.get()-1);
+					
+				}
+			}}.Illegalforwardreferenceworkaround())
+			.visible(()->yfiltermode.get() == YFilterMode.SingleLayer || yfiltermode.get() == YFilterMode.SeveralLayers)
+			.build()
+	);
+	
+	private final Setting<Integer> ylevel2 = sgGeneral.add(new IntSetting.Builder()
+			.name("y level filter height 2")
+			.description("")
+			.min(-65).sliderMin(-65)
+			.max(319).sliderMax(319)
+			.onChanged(integer -> new Object() { public void Illegalforwardreferenceworkaround() {
+				if (integer <= ylevel1.get()) {
+					ylevel2.set(ylevel1.get()+1);
+				}
+			}}.Illegalforwardreferenceworkaround())
+			.visible(()->yfiltermode.get() == YFilterMode.SeveralLayers)
+			.build()
+	);
+	*/
+	
+	
 
 	//endregion
-
+	
 
 	public Printer() {
 		super(Addon.CATEGORY, "litematica-printer", "description");
 	}
 
-	private int timer, placed = 0;
+	private int timer;
 	private int usedslot = -1;
-
-
+	
+	private final List<BlockPos> tosort = new ArrayList<>();
 
 	private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
 
-	@Override
-	public void onDeactivate() {
+	@Override public void onDeactivate() {
 		placed_fade.clear();
 	}
-
+	@Override public void onActivate() {
+		onDeactivate();
+	}
+	
 	@EventHandler @SuppressWarnings("unused")
 	private void onTick(TickEvent.Post event) {
 		if (mc.player == null || mc.world == null) {
 			placed_fade.clear();
 			return;
 		}
-
+		
 		placed_fade.forEach(s -> s.setLeft(s.getLeft()-1));
 		placed_fade.removeIf(s -> s.getLeft() <= 0);
-
+		
 		WorldSchematic worldSchematic = SchematicWorldHandler.getSchematicWorld();
 		if (worldSchematic == null) {
 			placed_fade.clear();
 			toggle();
 			return;
 		}
+		
+		tosort.clear();
+		
 		if (timer >= printing_delay.get()) {
-			BlockIterator.register(printing_range.get(), printing_range.get(), (pos, blockState) -> {
-				if (!mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) || !blockState.isAir()) return;
-				if (!DataManager.getRenderLayerRange().isPositionWithinRange(pos)) return;
+			
+			BlockIterator.register(printing_range.get()+1, printing_range.get()+1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
-				if (!required.isAir() && blockState.getBlock() != required.getBlock()) {
-					if (swichitem(required.getBlock().asItem(), () -> place(required, pos, advenced.get(), swing.get()))) {
-						placed++;
-						if (renderblocks.get())
-							placed_fade.add(new Pair<>(fadetime.get(), new BlockPos(pos)));
-						if (placed >= bpt.get()) {
-							BlockIterator.disableCurrent();
-							placed = 0;
+				
+				if (mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) && blockState.isAir() && !required.isAir() && blockState.getBlock() != required.getBlock()) {
+					tosort.add(new BlockPos(pos));
+				}
+			});
+			
+			
+			BlockIterator.after(() -> {
+				//if (!tosort.isEmpty()) info(tosort.toString());
+				
+				
+				
+				if (algoritm.get() != SortAlgoritm.None) {
+					if (algoritm.get().applysecondsorting) {
+						if (secondalgoritn.get() != SortingSecond.None) {
+							tosort.sort(secondalgoritn.get().al);
 						}
+					}
+					tosort.sort(algoritm.get().al);
+				}
+				
+				
+				int placed = 0;
+				for (var pos : tosort) {
+					
+					BlockState state = worldSchematic.getBlockState(pos);
+					if (swichitem(state.getBlock().asItem(), () -> place(state, pos, advenced.get(), swing.get()))) {
 						timer = 0;
+						placed++;
+						if (renderblocks.get()) {
+							placed_fade.add(new Pair<>(fadetime.get(), new BlockPos(pos)));
+						}
+						if (placed >= bpt.get()) {
+							return;
+						}
 					}
 				}
 			});
+			
+			
 		}else timer++;
 	}
 
@@ -260,5 +349,43 @@ public class Printer extends Module {
 			Color a = new Color(color.get().r, color.get().g, color.get().b, (int) (((float)s.getLeft() / (float)fadetime.get())*color.get().a));
 			event.renderer.box(s.getRight(), a, null, ShapeMode.Sides, 0);
 		});
+	}
+	
+	@SuppressWarnings("unused")
+	public enum SortAlgoritm {
+		None(false, (a, b) -> 0),
+		TopDown(true, Comparator.comparingInt(value -> value.getY()*-1)),
+		DownTop(true, Comparator.comparingInt(Vec3i::getY)),
+		Closest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5) : 0)),
+		Furthest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? (Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5))*-1 : 0));
+		
+		
+		final boolean applysecondsorting;
+		final Comparator<BlockPos> al;
+		
+		SortAlgoritm(boolean applysecondsorting, Comparator<BlockPos> al) {
+			this.applysecondsorting = applysecondsorting;
+			this.al = al;
+		}
+	}
+	
+	@SuppressWarnings("unused")
+	public enum SortingSecond {
+		None(SortAlgoritm.None.al),
+		Nearest(SortAlgoritm.Closest.al),
+		Furthest(SortAlgoritm.Furthest.al);
+		
+		final Comparator<BlockPos> al;
+		
+		SortingSecond(Comparator<BlockPos> al) {
+			this.al = al;
+		}
+	}
+	
+	@SuppressWarnings("unused")
+	public enum YFilterMode {
+		None,
+		SingleLayer,
+		SeveralLayers
 	}
 }
