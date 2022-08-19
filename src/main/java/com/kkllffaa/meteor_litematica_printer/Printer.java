@@ -24,6 +24,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
 import java.util.ArrayList;
@@ -32,15 +33,12 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public class Printer extends Module {
-
-
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
-
-	//region settings
+    private final SettingGroup sgRendering = settings.createGroup("Rendering");
 
 	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-range")
-			.description("printing block place range.")
+			.description("The block place range.")
 			.defaultValue(2)
 			.min(1).sliderMin(1)
 			.max(6).sliderMax(6)
@@ -49,7 +47,7 @@ public class Printer extends Module {
 
 	private final Setting<Integer> printing_delay = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-delay")
-			.description("delay between printing blocks in ticks.")
+			.description("Delay between printing blocks in ticks.")
 			.defaultValue(2)
 			.min(0).sliderMin(0)
 			.max(100).sliderMax(40)
@@ -58,160 +56,154 @@ public class Printer extends Module {
 
 	private final Setting<Integer> bpt = sgGeneral.add(new IntSetting.Builder()
 			.name("blocks/tick")
-			.description("how many blocks place in 1 tick.")
+			.description("How many blocks place per tick.")
 			.defaultValue(1)
 			.min(1).sliderMin(1)
 			.max(100).sliderMax(100)
 			.build()
 	);
 
-	private final Setting<Boolean> advenced = sgGeneral.add(new BoolSetting.Builder()
+	private final Setting<Boolean> advanced = sgGeneral.add(new BoolSetting.Builder()
 			.name("advanced")
-			.description("respect block rotation (places blocks in weird places only in singleplayer, multiplayer works fine).")
+			.description("Respect block rotation (places blocks in weird places in singleplayer, multiplayer should work fine).")
 			.defaultValue(false)
 			.build()
 	);
 
 	private final Setting<Boolean> swing = sgGeneral.add(new BoolSetting.Builder()
 			.name("swing")
-			.description("swing hand when placing.")
+			.description("Swing hand when placing.")
 			.defaultValue(false)
 			.build()
 	);
 
-    private final Setting<Boolean> returnhand = sgGeneral.add(new BoolSetting.Builder()
-			.name("return slot")
-			.description("return to old slot.")
+    private final Setting<Boolean> returnHand = sgGeneral.add(new BoolSetting.Builder()
+			.name("return-slot")
+			.description("Return to old slot.")
 			.defaultValue(false)
 			.build()
     );
 
-	private final Setting<Boolean> renderblocks = sgGeneral.add(new BoolSetting.Builder()
-			.name("render placed blocks")
-			.description("render cube when placing block.")
-			.defaultValue(false)
-			.build()
-	);
-
-	private final Setting<Integer> fadetime = sgGeneral.add(new IntSetting.Builder()
-			.name("fade time")
-			.description("in ticks.")
-			.defaultValue(2)
-			.min(1).sliderMin(1)
-			.max(1000).sliderMax(100)
-			.visible(renderblocks::get)
-			.build()
-	);
-
-	private final Setting<SettingColor> color = sgGeneral.add(new ColorSetting.Builder()
-			.name("color")
-			.description("cubes color.")
-			.defaultValue(new SettingColor(100, 100, 100))
-			.visible(renderblocks::get)
-			.build()
-	);
-
-    private final Setting<Boolean> rotateblocks = sgGeneral.add(new BoolSetting.Builder()
+    private final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
 			.name("rotate")
-			.description("look at the blocks being placed.")
+			.description("Rotate to the blocks being placed.")
 			.defaultValue(false)
 			.build()
     );
-    
-    private final Setting<SortAlgoritm> algoritm = sgGeneral.add(new EnumSetting.Builder<SortAlgoritm>()
-			.name("sorting mode")
-			.description("The blocks you want to place first.")
-			.defaultValue(SortAlgoritm.None)
-			.build()
-	);
-    
-    private final Setting<SortingSecond> secondalgoritn = sgGeneral.add(new EnumSetting.Builder<SortingSecond>()
-			.name("second sorting mode")
-			.description("second pass of sorting eg. place first blocks higher and closest to you.")
-			.defaultValue(SortingSecond.None)
-			.visible(()->algoritm.get().applysecondsorting)
-			.build()
-	);
-	
 
-	//endregion
-	
+    private final Setting<SortAlgorithm> firstAlgorithm = sgGeneral.add(new EnumSetting.Builder<SortAlgorithm>()
+			.name("first-sorting-mode")
+			.description("The blocks you want to place first.")
+			.defaultValue(SortAlgorithm.None)
+			.build()
+	);
+
+    private final Setting<SortingSecond> secondAlgorithm = sgGeneral.add(new EnumSetting.Builder<SortingSecond>()
+			.name("second-sorting-mode")
+			.description("Second pass of sorting eg. place first blocks higher and closest to you.")
+			.defaultValue(SortingSecond.None)
+			.visible(()-> firstAlgorithm.get().applySecondSorting)
+			.build()
+	);
+
+    private final Setting<Boolean> renderBlocks = sgRendering.add(new BoolSetting.Builder()
+        .name("render-placed-blocks")
+        .description("Renders block placements.")
+        .defaultValue(true)
+        .build()
+    );
+
+    private final Setting<Integer> fadeTime = sgRendering.add(new IntSetting.Builder()
+        .name("fade-time")
+        .description("Time for the rendering to fade, in ticks.")
+        .defaultValue(2)
+        .min(1).sliderMin(1)
+        .max(1000).sliderMax(100)
+        .visible(renderBlocks::get)
+        .build()
+    );
+
+    private final Setting<SettingColor> colour = sgRendering.add(new ColorSetting.Builder()
+        .name("colour")
+        .description("The cubes colour.")
+        .defaultValue(new SettingColor(100, 100, 100))
+        .visible(renderBlocks::get)
+        .build()
+    );
+
+    private int timer;
+    private int usedSlot = -1;
+    private final List<BlockPos> toSort = new ArrayList<>();
+    private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
+
 
 	public Printer() {
-		super(Addon.CATEGORY, "litematica-printer", "description");
+		super(Addon.CATEGORY, "litematica-printer", "Automatically prints open schematics");
 	}
 
-	private int timer;
-	private int usedslot = -1;
-	
-	private final List<BlockPos> tosort = new ArrayList<>();
+    @Override
+    public void onActivate() {
+        onDeactivate();
+    }
 
-	private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
-
-	@Override public void onDeactivate() {
+	@Override
+    public void onDeactivate() {
 		placed_fade.clear();
 	}
-	@Override public void onActivate() {
-		onDeactivate();
-	}
-	
-	@EventHandler @SuppressWarnings("unused")
+
+	@EventHandler
 	private void onTick(TickEvent.Post event) {
 		if (mc.player == null || mc.world == null) {
 			placed_fade.clear();
 			return;
 		}
-		
-		placed_fade.forEach(s -> s.setLeft(s.getLeft()-1));
+
+		placed_fade.forEach(s -> s.setLeft(s.getLeft() - 1));
 		placed_fade.removeIf(s -> s.getLeft() <= 0);
-		
+
 		WorldSchematic worldSchematic = SchematicWorldHandler.getSchematicWorld();
 		if (worldSchematic == null) {
 			placed_fade.clear();
 			toggle();
 			return;
 		}
-		
-		tosort.clear();
-		
+
+		toSort.clear();
+
 		if (timer >= printing_delay.get()) {
-			
-			BlockIterator.register(printing_range.get()+1, printing_range.get()+1, (pos, blockState) -> {
+			BlockIterator.register(printing_range.get() + 1, printing_range.get() + 1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
-				
 				if (mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) &&
-						blockState.isAir() && !required.isAir() && blockState.getBlock() != required.getBlock() &&
-						DataManager.getRenderLayerRange().isPositionWithinRange(pos)) {
-					tosort.add(new BlockPos(pos));
+                        blockState.getMaterial().isReplaceable() && !required.isAir() && blockState.getBlock() != required.getBlock() &&
+                        DataManager.getRenderLayerRange().isPositionWithinRange(pos) &&
+                        !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1))) {
+					toSort.add(new BlockPos(pos));
 				}
 			});
-			
-			
+
 			BlockIterator.after(() -> {
 				//if (!tosort.isEmpty()) info(tosort.toString());
-				
-				
-				
-				if (algoritm.get() != SortAlgoritm.None) {
-					if (algoritm.get().applysecondsorting) {
-						if (secondalgoritn.get() != SortingSecond.None) {
-							tosort.sort(secondalgoritn.get().al);
+
+				if (firstAlgorithm.get() != SortAlgorithm.None) {
+					if (firstAlgorithm.get().applySecondSorting) {
+						if (secondAlgorithm.get() != SortingSecond.None) {
+							toSort.sort(secondAlgorithm.get().al);
 						}
 					}
-					tosort.sort(algoritm.get().al);
+					toSort.sort(firstAlgorithm.get().al);
 				}
-				
-				
+
+
 				int placed = 0;
-				for (var pos : tosort) {
-					
+				for (var pos : toSort) {
+
 					BlockState state = worldSchematic.getBlockState(pos);
-					if (swichitem(state.getBlock().asItem(), () -> place(state, pos, advenced.get(), swing.get()))) {
+					if (switchItem(state.getBlock().asItem(), () -> place(state, pos))) {
 						timer = 0;
 						placed++;
-						if (renderblocks.get()) {
-							placed_fade.add(new Pair<>(fadetime.get(), new BlockPos(pos)));
+						if (renderBlocks.get()) {
+							placed_fade.add(new Pair<>(fadeTime.get(), new BlockPos(pos)));
 						}
 						if (placed >= bpt.get()) {
 							return;
@@ -219,81 +211,93 @@ public class Printer extends Module {
 					}
 				}
 			});
-			
-			
-		}else timer++;
+
+
+		} else timer++;
 	}
 
-	public boolean place(BlockState required, BlockPos pos, boolean adv, boolean _swing) {
+	public boolean place(BlockState required, BlockPos pos) {
 		if (mc.player == null || mc.world == null) return false;
 
 		if (mc.world.isAir(pos) || mc.world.getBlockState(pos).getMaterial().isLiquid()) {
 			Direction direction = dir(required);
 
-			if (!adv || direction == Direction.UP) {
-				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, false, 50, _swing, true, false);
-			}else {
-				return MyUtils.place(pos, direction, _swing, rotateblocks.get());
+			if (!advanced.get() || direction == Direction.UP) {
+				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, rotate.get(), 50, swing.get(), true, false);
+			} else {
+				return MyUtils.place(pos, direction, swing.get(), rotate.get());
 			}
 
-		}else return false;
+		} else return false;
 	}
 
-	private boolean swichitem(Item item, Supplier<Boolean> action) {
+	private boolean switchItem(Item item, Supplier<Boolean> action) {
 		if (mc.player == null) return false;
+
 		int a = mc.player.getInventory().selectedSlot;
 		FindItemResult result = InvUtils.find(item);
+
 		if (mc.player.getMainHandStack().getItem() == item) {
 			if (action.get()) {
-				usedslot = mc.player.getInventory().selectedSlot;
+				usedSlot = mc.player.getInventory().selectedSlot;
 				return true;
-			}else return false;
-		} else if (usedslot != -1 && mc.player.getInventory().getStack(usedslot).getItem() == item) {
-			InvUtils.swap(usedslot, returnhand.get());
+			} else return false;
+
+		} else if (usedSlot != -1 && mc.player.getInventory().getStack(usedSlot).getItem() == item) {
+			InvUtils.swap(usedSlot, returnHand.get());
+
 			if (action.get()) {
-				InvUtils.swap(a, returnhand.get());
+				InvUtils.swap(a, returnHand.get());
 				return true;
-			}else {
-				InvUtils.swap(a, returnhand.get());
+			} else {
+				InvUtils.swap(a, returnHand.get());
 				return false;
 			}
-		}else if (result.found()) {
+
+		} else if (result.found()) {
 			if (result.isHotbar()) {
-				InvUtils.swap(result.slot(), returnhand.get());
+				InvUtils.swap(result.slot(), returnHand.get());
+
 				if (action.get()) {
-					usedslot = mc.player.getInventory().selectedSlot;
-					InvUtils.swap(a, returnhand.get());
+					usedSlot = mc.player.getInventory().selectedSlot;
+					InvUtils.swap(a, returnHand.get());
 					return true;
-				}else {
-					InvUtils.swap(a, returnhand.get());
+				} else {
+					InvUtils.swap(a, returnHand.get());
 					return false;
 				}
-			}else if (result.isMain()){
+
+			} else if (result.isMain()) {
 				FindItemResult empty = InvUtils.findEmpty();
+
 				if (empty.found() && empty.isHotbar()) {
 					InvUtils.move().from(result.slot()).toHotbar(empty.slot());
-					InvUtils.swap(empty.slot(), returnhand.get());
+					InvUtils.swap(empty.slot(), returnHand.get());
+
 					if (action.get()) {
-						usedslot = mc.player.getInventory().selectedSlot;
-						InvUtils.swap(a, returnhand.get());
+						usedSlot = mc.player.getInventory().selectedSlot;
+						InvUtils.swap(a, returnHand.get());
 						return true;
-					}else {
-						InvUtils.swap(a, returnhand.get());
+					} else {
+						InvUtils.swap(a, returnHand.get());
 						return false;
 					}
-				} else if (usedslot != -1) {
-					InvUtils.move().from(result.slot()).toHotbar(usedslot);
-					InvUtils.swap(usedslot, returnhand.get());
+
+				} else if (usedSlot != -1) {
+					InvUtils.move().from(result.slot()).toHotbar(usedSlot);
+					InvUtils.swap(usedSlot, returnHand.get());
+
 					if (action.get()) {
-						InvUtils.swap(a, returnhand.get());
+						InvUtils.swap(a, returnHand.get());
 						return true;
-					}else {
-						InvUtils.swap(a, returnhand.get());
+					} else {
+						InvUtils.swap(a, returnHand.get());
 						return false;
 					}
-				}else return false;
-			}else return false;
-		}else return false;
+
+				} else return false;
+			} else return false;
+		} else return false;
 	}
 
 	private Direction dir(BlockState state) {
@@ -303,43 +307,42 @@ public class Printer extends Module {
 		else return Direction.UP;
 	}
 
-	@EventHandler @SuppressWarnings("unused")
+	@EventHandler
 	private void onRender(Render3DEvent event) {
 		placed_fade.forEach(s -> {
-			Color a = new Color(color.get().r, color.get().g, color.get().b, (int) (((float)s.getLeft() / (float)fadetime.get())*color.get().a));
+			Color a = new Color(colour.get().r, colour.get().g, colour.get().b, (int) (((float)s.getLeft() / (float) fadeTime.get()) * colour.get().a));
 			event.renderer.box(s.getRight(), a, null, ShapeMode.Sides, 0);
 		});
 	}
-	
+
 	@SuppressWarnings("unused")
-	public enum SortAlgoritm {
+	public enum SortAlgorithm {
 		None(false, (a, b) -> 0),
-		TopDown(true, Comparator.comparingInt(value -> value.getY()*-1)),
+		TopDown(true, Comparator.comparingInt(value -> value.getY() * -1)),
 		DownTop(true, Comparator.comparingInt(Vec3i::getY)),
 		Closest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5) : 0)),
-		Furthest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? (Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5))*-1 : 0));
-		
-		
-		final boolean applysecondsorting;
+		Furthest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? (Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5)) * -1 : 0));
+
+
+		final boolean applySecondSorting;
 		final Comparator<BlockPos> al;
-		
-		SortAlgoritm(boolean applysecondsorting, Comparator<BlockPos> al) {
-			this.applysecondsorting = applysecondsorting;
+
+		SortAlgorithm(boolean applySecondSorting, Comparator<BlockPos> al) {
+			this.applySecondSorting = applySecondSorting;
 			this.al = al;
 		}
 	}
-	
+
 	@SuppressWarnings("unused")
 	public enum SortingSecond {
-		None(SortAlgoritm.None.al),
-		Nearest(SortAlgoritm.Closest.al),
-		Furthest(SortAlgoritm.Furthest.al);
-		
+		None(SortAlgorithm.None.al),
+		Nearest(SortAlgorithm.Closest.al),
+		Furthest(SortAlgorithm.Furthest.al);
+
 		final Comparator<BlockPos> al;
-		
+
 		SortingSecond(Comparator<BlockPos> al) {
 			this.al = al;
 		}
 	}
-	
 }
