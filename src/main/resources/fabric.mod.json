@@ -5,11 +5,10 @@
   "version": "${version}",
   "description": "Fast printer for litematica made with meteor.",
   "authors": [
-    "kkllffaa",
-    "Wide_Cat"
+    "kkllffaa"
   ],
   "contact": {
-    "repo": "https://github.com/wide-cat/meteor-litematica-printer"
+    "repo": "https://github.com/kkllffaa/meteor-litematica-printer"
   },
   "icon": "assets/meteor_litematica_printer/icon.png",
   "environment": "client",

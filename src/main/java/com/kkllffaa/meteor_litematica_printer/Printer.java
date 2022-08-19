@@ -26,6 +26,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.registry.Registry;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -116,9 +117,9 @@ public class Printer extends Module {
     private final Setting<Integer> fadeTime = sgRendering.add(new IntSetting.Builder()
         .name("fade-time")
         .description("Time for the rendering to fade, in ticks.")
-        .defaultValue(2)
+        .defaultValue(3)
         .min(1).sliderMin(1)
-        .max(1000).sliderMax(100)
+        .max(1000).sliderMax(20)
         .visible(renderBlocks::get)
         .build()
     );
@@ -126,7 +127,7 @@ public class Printer extends Module {
     private final Setting<SettingColor> colour = sgRendering.add(new ColorSetting.Builder()
         .name("colour")
         .description("The cubes colour.")
-        .defaultValue(new SettingColor(100, 100, 100))
+        .defaultValue(new SettingColor(95, 190, 255))
         .visible(renderBlocks::get)
         .build()
     );
@@ -188,15 +189,15 @@ public class Printer extends Module {
 				if (firstAlgorithm.get() != SortAlgorithm.None) {
 					if (firstAlgorithm.get().applySecondSorting) {
 						if (secondAlgorithm.get() != SortingSecond.None) {
-							toSort.sort(secondAlgorithm.get().al);
+							toSort.sort(secondAlgorithm.get().algorithm);
 						}
 					}
-					toSort.sort(firstAlgorithm.get().al);
+					toSort.sort(firstAlgorithm.get().algorithm);
 				}
 
 
 				int placed = 0;
-				for (var pos : toSort) {
+				for (BlockPos pos : toSort) {
 
 					BlockState state = worldSchematic.getBlockState(pos);
 					if (switchItem(state.getBlock().asItem(), () -> place(state, pos))) {
@@ -218,17 +219,15 @@ public class Printer extends Module {
 
 	public boolean place(BlockState required, BlockPos pos) {
 		if (mc.player == null || mc.world == null) return false;
+		if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()) return false;
 
-		if (mc.world.isAir(pos) || mc.world.getBlockState(pos).getMaterial().isLiquid()) {
-			Direction direction = dir(required);
+        Direction direction = dir(required);
 
-			if (!advanced.get() || direction == Direction.UP) {
-				return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, rotate.get(), 50, swing.get(), true, false);
-			} else {
-				return MyUtils.place(pos, direction, swing.get(), rotate.get());
-			}
-
-		} else return false;
+        if (!advanced.get() || direction == Direction.UP) {
+            return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, rotate.get(), 50, swing.get(), true, false);
+        } else {
+            return MyUtils.place(pos, direction, swing.get(), rotate.get());
+        }
 	}
 
 	private boolean switchItem(Item item, Supplier<Boolean> action) {
@@ -325,24 +324,24 @@ public class Printer extends Module {
 
 
 		final boolean applySecondSorting;
-		final Comparator<BlockPos> al;
+		final Comparator<BlockPos> algorithm;
 
-		SortAlgorithm(boolean applySecondSorting, Comparator<BlockPos> al) {
+		SortAlgorithm(boolean applySecondSorting, Comparator<BlockPos> algorithm) {
 			this.applySecondSorting = applySecondSorting;
-			this.al = al;
+			this.algorithm = algorithm;
 		}
 	}
 
 	@SuppressWarnings("unused")
 	public enum SortingSecond {
-		None(SortAlgorithm.None.al),
-		Nearest(SortAlgorithm.Closest.al),
-		Furthest(SortAlgorithm.Furthest.al);
+		None(SortAlgorithm.None.algorithm),
+		Nearest(SortAlgorithm.Closest.algorithm),
+		Furthest(SortAlgorithm.Furthest.algorithm);
 
-		final Comparator<BlockPos> al;
+		final Comparator<BlockPos> algorithm;
 
-		SortingSecond(Comparator<BlockPos> al) {
-			this.al = al;
+		SortingSecond(Comparator<BlockPos> algorithm) {
+			this.algorithm = algorithm;
 		}
 	}
 }
