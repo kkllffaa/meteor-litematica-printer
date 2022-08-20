@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "name": "meteor-litematica-printer",
+  "name": "Meteor Litematica Printer",
   "id": "meteor-litematica-printer",
   "version": "${version}",
-  "description": "fast printer for litematica made with meteor.",
+  "description": "Fast printer for litematica made with meteor.",
   "authors": [
     "kkllffaa"
   ],
@@ -17,12 +17,9 @@
       "com.kkllffaa.meteor_litematica_printer.Addon"
     ]
   },
-  "mixins": [
-    "template.mixins.json"
-  ],
   "depends": {
     "java": ">=17",
-    "minecraft": "1.18.x",
-    "meteor-client": ">=0.4.7-1"
+    "minecraft": "1.19.x",
+    "meteor-client": ">=0.5.0"
   }
 }

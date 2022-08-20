@@ -1,7 +1,6 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import meteordevelopment.meteorclient.utils.Utils;
-import meteordevelopment.meteorclient.utils.player.InvUtils;
+import meteordevelopment.meteorclient.utils.player.ChatUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import net.minecraft.block.BlockState;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -26,38 +25,33 @@ public class MyUtils {
 		Vec3d hitPos = new Vec3d(blockPos.getX() + 0.5, blockPos.getY() + 0.5, blockPos.getZ() + 0.5);
 
 		BlockPos neighbour;
-		Direction side = direction;
 
-		if (side == null) {
-			side = Direction.UP;
+		if (direction == null) {
+            direction = Direction.UP;
 			neighbour = blockPos;
 		} else {
-			neighbour = blockPos.offset(side.getOpposite());
-			hitPos.add(side.getOffsetX() * 0.5, side.getOffsetY() * 0.5, side.getOffsetZ() * 0.5);
+			neighbour = blockPos.offset(direction.getOpposite());
+			hitPos.add(direction.getOffsetX() * 0.5, direction.getOffsetY() * 0.5, direction.getOffsetZ() * 0.5);
 		}
 
-		Direction s = side;
 
+		Direction s = direction;
         if (rotate) {
-            Rotations.rotate(Rotations.getYaw(hitPos), Rotations.getPitch(hitPos), 50, () -> {
-                place(new BlockHitResult(hitPos, s, neighbour, false), swingHand);
-            });
+            Rotations.rotate(Rotations.getYaw(hitPos), Rotations.getPitch(hitPos), 50,
+                () -> place(new BlockHitResult(hitPos, s, neighbour, false), swingHand));
         } else {
             place(new BlockHitResult(hitPos, s, neighbour, false), swingHand);
         }
 
-
-
 		return true;
 	}
-
 
 	private static void place(BlockHitResult blockHitResult, boolean swing) {
 		if (mc.player == null || mc.interactionManager == null || mc.getNetworkHandler() == null) return;
 		boolean wasSneaking = mc.player.input.sneaking;
 		mc.player.input.sneaking = false;
 
-		ActionResult result = mc.interactionManager.interactBlock(mc.player, mc.world, Hand.MAIN_HAND, blockHitResult);
+		ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, blockHitResult);
 
 		if (result.shouldSwingHand()) {
 			if (swing) mc.player.swingHand(Hand.MAIN_HAND);
@@ -87,7 +81,4 @@ public class MyUtils {
 
 		return null;
 	}
-
-
-
 }
