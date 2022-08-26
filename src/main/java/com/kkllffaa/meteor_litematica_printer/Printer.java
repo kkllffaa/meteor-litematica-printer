@@ -19,6 +19,7 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
+import net.minecraft.item.Items;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
@@ -91,6 +92,13 @@ public class Printer extends Module {
 			.defaultValue(false)
 			.build()
     );
+
+	private final Setting<Boolean> dirtgrass = sgGeneral.add(new BoolSetting.Builder()
+			.name("dirt-as-grass")
+			.description("Use dirt instead of grass.")
+			.defaultValue(true)
+			.build()
+	);
 
     private final Setting<SortAlgorithm> firstAlgorithm = sgGeneral.add(new EnumSetting.Builder<SortAlgorithm>()
 			.name("first-sorting-mode")
@@ -200,7 +208,12 @@ public class Printer extends Module {
 				for (BlockPos pos : toSort) {
 
 					BlockState state = worldSchematic.getBlockState(pos);
-					if (switchItem(state.getBlock().asItem(), () -> place(state, pos))) {
+					Item item = state.getBlock().asItem();
+
+					if (dirtgrass.get() && item == Items.GRASS_BLOCK)
+						item = Items.DIRT;
+
+					if (switchItem(item, () -> place(state, pos))) {
 						timer = 0;
 						placed++;
 						if (renderBlocks.get()) {
