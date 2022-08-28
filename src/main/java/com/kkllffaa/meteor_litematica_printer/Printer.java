@@ -17,6 +17,7 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockIterator;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
+import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -36,6 +37,7 @@ import java.util.function.Supplier;
 
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
+	private final SettingGroup sgWhitelist = settings.createGroup("Whitelist");
     private final SettingGroup sgRendering = settings.createGroup("Rendering");
 
 	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
@@ -115,6 +117,20 @@ public class Printer extends Module {
 			.build()
 	);
 
+    private final Setting<Boolean> whitelistenabled = sgWhitelist.add(new BoolSetting.Builder()
+			.name("whitelist-enabled")
+			.description("Only place selected blocks.")
+			.defaultValue(false)
+			.build()
+	);
+
+    private final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
+			.name("whitelist")
+			.description("Blocks to place.")
+			.visible(whitelistenabled::get)
+			.build()
+	);
+
     private final Setting<Boolean> renderBlocks = sgRendering.add(new BoolSetting.Builder()
         .name("render-placed-blocks")
         .description("Renders block placements.")
@@ -187,7 +203,10 @@ public class Printer extends Module {
                         blockState.getMaterial().isReplaceable() && !required.isAir() && blockState.getBlock() != required.getBlock() &&
                         DataManager.getRenderLayerRange().isPositionWithinRange(pos) &&
                         !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1))) {
-					toSort.add(new BlockPos(pos));
+
+					if (!whitelistenabled.get() || whitelist.get().contains(required.getBlock())) {
+						toSort.add(new BlockPos(pos));
+					}
 				}
 			});
 
