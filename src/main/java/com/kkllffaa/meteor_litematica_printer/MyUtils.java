@@ -1,20 +1,21 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import meteordevelopment.meteorclient.utils.player.ChatUtils;
+import static meteordevelopment.meteorclient.MeteorClient.mc;
+import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
+import static meteordevelopment.meteorclient.utils.world.BlockUtils.isClickable;
+
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import net.minecraft.block.BlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
-
-import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
-import static meteordevelopment.meteorclient.utils.world.BlockUtils.isClickable;
-
-import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public class MyUtils {
 
@@ -81,4 +82,16 @@ public class MyUtils {
 
 		return null;
 	}
+	
+	public static NbtCompound getNbtFromBlockState (ItemStack itemStack, BlockState state) {
+		NbtCompound nbt = itemStack.getOrCreateNbt();
+		NbtCompound subNbt = new NbtCompound();
+		for (Property<?> property : state.getProperties()) {
+			subNbt.putString(property.getName(), state.get(property).toString());
+		}
+		nbt.put("BlockStateTag", subNbt);
+		
+		return nbt;
+	}
+	
 }

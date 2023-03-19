@@ -1,5 +1,10 @@
 package com.kkllffaa.meteor_litematica_printer;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Supplier;
+
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
@@ -7,7 +12,13 @@ import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
-import meteordevelopment.meteorclient.settings.*;
+import meteordevelopment.meteorclient.settings.BlockListSetting;
+import meteordevelopment.meteorclient.settings.BoolSetting;
+import meteordevelopment.meteorclient.settings.ColorSetting;
+import meteordevelopment.meteorclient.settings.EnumSetting;
+import meteordevelopment.meteorclient.settings.IntSetting;
+import meteordevelopment.meteorclient.settings.Setting;
+import meteordevelopment.meteorclient.settings.SettingGroup;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
@@ -20,7 +31,10 @@ import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
@@ -28,12 +42,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.registry.Registry;
-
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Supplier;
 
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -232,7 +240,7 @@ public class Printer extends Module {
 					if (dirtgrass.get() && item == Items.GRASS_BLOCK)
 						item = Items.DIRT;
 
-					if (switchItem(item, () -> place(state, pos))) {
+					if (switchItem(item, state, () -> place(state, pos))) {
 						timer = 0;
 						placed++;
 						if (renderBlocks.get()) {
@@ -262,39 +270,76 @@ public class Printer extends Module {
         }
 	}
 
-	private boolean switchItem(Item item, Supplier<Boolean> action) {
-		if (mc.player == null) return false;
+	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
+if (mc.player == null) return false;
+		
+		int selectedSlot = mc.player.getInventory().selectedSlot;
+		boolean isCreative = mc.player.getAbilities().creativeMode;
+		ItemStack requiredItemStack = item.getDefaultStack();
+		NbtCompound nbt = MyUtils.getNbtFromBlockState(requiredItemStack, state);
+		requiredItemStack.setNbt(nbt);
+		FindItemResult result = InvUtils.find(item); 
+		
+		
+		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in creative
 
-		int a = mc.player.getInventory().selectedSlot;
-		FindItemResult result = InvUtils.find(item);
-
-		if (mc.player.getMainHandStack().getItem() == item) {
+		if (
+			!isCreative &&
+			mc.player.getMainHandStack().getItem() == item ||
+			isCreative &&
+			mc.player.getMainHandStack().getItem() == item &&
+			ItemStack
+			.areNbtEqual(
+			mc.player.getMainHandStack()
+			,
+			requiredItemStack)
+		) {
 			if (action.get()) {
 				usedSlot = mc.player.getInventory().selectedSlot;
 				return true;
 			} else return false;
 
-		} else if (usedSlot != -1 && mc.player.getInventory().getStack(usedSlot).getItem() == item) {
+		} else if (
+			!isCreative &&
+			usedSlot != -1 &&
+			mc.player.getInventory().getStack(usedSlot).getItem() == item ||
+			isCreative &&
+			usedSlot != -1 &&
+			mc.player.getInventory().getStack(usedSlot).getItem() == item &&
+			ItemStack
+			.areNbtEqual(
+			mc.player.getInventory().getStack(usedSlot),
+			requiredItemStack)
+		) {
 			InvUtils.swap(usedSlot, returnHand.get());
-
 			if (action.get()) {
-				InvUtils.swap(a, returnHand.get());
 				return true;
 			} else {
-				InvUtils.swap(a, returnHand.get());
+				InvUtils.swap(selectedSlot, returnHand.get());
 				return false;
 			}
 
-		} else if (result.found()) {
+		} else if (
+			result.found() &&
+			!isCreative ||
+			result.found() &&
+			isCreative &&
+			result.found() &&
+			result.slot() != -1 &&
+			ItemStack
+			.areNbtEqual(
+			requiredItemStack, 
+			mc.player.getInventory().getStack(result.slot())
+			)
+		) {
 			if (result.isHotbar()) {
 				InvUtils.swap(result.slot(), returnHand.get());
 
 				if (action.get()) {
 					usedSlot = mc.player.getInventory().selectedSlot;
-					InvUtils.swap(a, returnHand.get());
 					return true;
 				} else {
-					InvUtils.swap(a, returnHand.get());
+					InvUtils.swap(selectedSlot, returnHand.get());
 					return false;
 				}
 
@@ -307,10 +352,9 @@ public class Printer extends Module {
 
 					if (action.get()) {
 						usedSlot = mc.player.getInventory().selectedSlot;
-						InvUtils.swap(a, returnHand.get());
 						return true;
 					} else {
-						InvUtils.swap(a, returnHand.get());
+						InvUtils.swap(selectedSlot, returnHand.get());
 						return false;
 					}
 
@@ -319,15 +363,23 @@ public class Printer extends Module {
 					InvUtils.swap(usedSlot, returnHand.get());
 
 					if (action.get()) {
-						InvUtils.swap(a, returnHand.get());
 						return true;
 					} else {
-						InvUtils.swap(a, returnHand.get());
+						InvUtils.swap(selectedSlot, returnHand.get());
 						return false;
 					}
 
 				} else return false;
 			} else return false;
+		} else if (isCreative) {
+			int slot = 0;
+            FindItemResult fir = InvUtils.find(ItemStack::isEmpty, 0, 8);
+            if (fir.found()) {
+                slot = fir.slot();
+            }
+			mc.getNetworkHandler().sendPacket(new CreativeInventoryActionC2SPacket(36 + slot, requiredItemStack));
+			InvUtils.swap(slot, returnHand.get());
+            return true;
 		} else return false;
 	}
 
