@@ -36,7 +36,6 @@ import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.state.property.Properties;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Pair;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -81,6 +80,20 @@ public class Printer extends Module {
 			.defaultValue(false)
 			.build()
 	);
+	
+	private final Setting<Boolean> airPlace = sgGeneral.add(new BoolSetting.Builder()
+			.name("air-place")
+			.description("Allow the bot to place in the air.")
+			.defaultValue(true)
+			.build()
+	);
+	
+	private final Setting<Boolean> placeThroughWall = sgGeneral.add(new BoolSetting.Builder()
+			.name("Place Through Wall")
+			.description("Allow the bot to place through walls.")
+			.defaultValue(true)
+			.build()
+	);
 
 	private final Setting<Boolean> swing = sgGeneral.add(new BoolSetting.Builder()
 			.name("swing")
@@ -100,6 +113,14 @@ public class Printer extends Module {
 			.name("rotate")
 			.description("Rotate to the blocks being placed.")
 			.defaultValue(false)
+			.build()
+    );
+
+    private final Setting<Boolean> clientSide = sgGeneral.add(new BoolSetting.Builder()
+			.name("Client side Rotation")
+			.description("Rotate to the blocks being placed on client side.")
+			.defaultValue(false)
+			.visible(rotate::get)
 			.build()
     );
 
@@ -170,6 +191,10 @@ public class Printer extends Module {
     private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
 
 
+	// TODO: Add an option for smooth rotation. Make it look legit. 
+	// Might use liquidbounce RotationUtils to make it happen.	
+	// https://github.com/CCBlueX/LiquidBounce/blob/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/utils/aiming/RotationsUtil.kt#L257
+
 	public Printer() {
 		super(Addon.CATEGORY, "litematica-printer", "Automatically prints open schematics");
 	}
@@ -202,22 +227,49 @@ public class Printer extends Module {
 		}
 
 		toSort.clear();
+		
 
 		if (timer >= printing_delay.get()) {
 			BlockIterator.register(printing_range.get() + 1, printing_range.get() + 1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
-				if (mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) &&
-                        blockState.getMaterial().isReplaceable() && !required.isAir() && blockState.getBlock() != required.getBlock() &&
-                        DataManager.getRenderLayerRange().isPositionWithinRange(pos) &&
-                        !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1))) {
+				if (
+						mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) 
+						&& blockState.getMaterial().isReplaceable() 
+						&& !required.isAir() 
+						&& blockState.getBlock() != required.getBlock() 
+						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos) 
+						&& !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1)) 
+						&& required.canPlaceAt(mc.world, pos)
+					) {
+					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
 
-					if (!whitelistenabled.get() || whitelist.get().contains(required.getBlock())) {
-						toSort.add(new BlockPos(pos));
+					if(
+						airPlace.get()
+						&& placeThroughWall.get()
+						|| !airPlace.get()
+						&& !placeThroughWall.get() 
+						&&  isBlockInLineOfSight
+						&& MyUtils.getVisiblePlaceSide(
+							pos,
+							required, 
+							printing_range.get(),
+							advanced.get() ? dir(required) : null
+						) != null
+						|| airPlace.get()
+						&& !placeThroughWall.get() 
+						&& isBlockInLineOfSight
+						|| !airPlace.get()
+						&& placeThroughWall.get() 
+						&& BlockUtils.getPlaceSide(pos) != null
+					) {
+						if (!whitelistenabled.get() || whitelist.get().contains(required.getBlock())) {
+							toSort.add(new BlockPos(pos));
+						}
 					}
 				}
 			});
-
+			
 			BlockIterator.after(() -> {
 				//if (!tosort.isEmpty()) info(tosort.toString());
 
@@ -239,7 +291,6 @@ public class Printer extends Module {
 
 					if (dirtgrass.get() && item == Items.GRASS_BLOCK)
 						item = Items.DIRT;
-
 					if (switchItem(item, state, () -> place(state, pos))) {
 						timer = 0;
 						placed++;
@@ -258,20 +309,27 @@ public class Printer extends Module {
 	}
 
 	public boolean place(BlockState required, BlockPos pos) {
+		
 		if (mc.player == null || mc.world == null) return false;
 		if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()) return false;
+		
+		Direction wantedSide = advanced.get() ? dir(required) : null;
 
-        Direction direction = dir(required);
 
-        if (!advanced.get() || direction == Direction.UP) {
-            return BlockUtils.place(pos, Hand.MAIN_HAND, mc.player.getInventory().selectedSlot, rotate.get(), 50, swing.get(), true, false);
-        } else {
-            return MyUtils.place(pos, direction, swing.get(), rotate.get());
-        }
+    	Direction placeSide = placeThroughWall.get() ? 
+    						MyUtils.getPlaceSide(pos, wantedSide)
+    						: MyUtils.getVisiblePlaceSide(
+    								pos, 
+    								required, 
+    								printing_range.get(),
+    								wantedSide
+							);
+
+        return MyUtils.place(pos, placeSide, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
-if (mc.player == null) return false;
+		if (mc.player == null) return false;
 		
 		int selectedSlot = mc.player.getInventory().selectedSlot;
 		boolean isCreative = mc.player.getAbilities().creativeMode;
