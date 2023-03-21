@@ -1,7 +1,7 @@
 //file:noinspection JCenterRepository
 //file:noinspection GrDeprecatedAPIUsage
 plugins {
-    id 'fabric-loom' version '0.12-SNAPSHOT'
+    id 'fabric-loom' version '1.1-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -41,6 +41,8 @@ dependencies {
 
     // Meteor
     modImplementation "meteordevelopment:meteor-client:${project.meteor_version}"
+    modImplementation "baritone:fabric:${project.minecraft_version}-SNAPSHOT"
+
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
     modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"

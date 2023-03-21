@@ -235,7 +235,8 @@ public class Printer extends Module {
 
 				if (
 						mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) 
-						&& blockState.getMaterial().isReplaceable() 
+						&& blockState.getMaterial().isReplaceable()
+						&& !required.getMaterial().isLiquid()
 						&& !required.isAir() 
 						&& blockState.getBlock() != required.getBlock() 
 						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos) 
@@ -461,7 +462,7 @@ public class Printer extends Module {
 		None(false, (a, b) -> 0),
 		TopDown(true, Comparator.comparingInt(value -> value.getY() * -1)),
 		DownTop(true, Comparator.comparingInt(Vec3i::getY)),
-		Closest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5) : 0)),
+		Nearest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5) : 0)),
 		Furthest(false, Comparator.comparingDouble(value -> MeteorClient.mc.player != null ? (Utils.squaredDistance(MeteorClient.mc.player.getX(), MeteorClient.mc.player.getY(), MeteorClient.mc.player.getZ(), value.getX() + 0.5, value.getY() + 0.5, value.getZ() + 0.5)) * -1 : 0));
 
 
@@ -477,7 +478,7 @@ public class Printer extends Module {
 	@SuppressWarnings("unused")
 	public enum SortingSecond {
 		None(SortAlgorithm.None.algorithm),
-		Nearest(SortAlgorithm.Closest.algorithm),
+		Nearest(SortAlgorithm.Nearest.algorithm),
 		Furthest(SortAlgorithm.Furthest.algorithm);
 
 		final Comparator<BlockPos> algorithm;
