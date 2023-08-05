@@ -1,7 +1,5 @@
-//file:noinspection JCenterRepository
-//file:noinspection GrDeprecatedAPIUsage
 plugins {
-    id 'fabric-loom' version '1.2-SNAPSHOT'
+    id 'fabric-loom' version '1.3-SNAPSHOT'
     id 'maven-publish'
 }
 
@@ -12,25 +10,12 @@ version = project.mod_version
 group = project.maven_group
 
 repositories {
-    jcenter()
-
-    maven {
-        name = "jitpack"
-        url = "https://jitpack.io"
-    }
 
     maven { url = "https://www.cursemaven.com" }
     maven { url = "https://masa.dy.fi/maven" }
 
-    maven {
-        name = "meteor-maven"
-        url = "https://maven.meteordev.org/releases"
-    }
-
-    maven {
-        name = "meteor-maven-snapshots"
-        url = "https://maven.meteordev.org/snapshots"
-    }
+    maven { url = "https://maven.meteordev.org/releases" }
+    maven { url = "https://maven.meteordev.org/snapshots" }
 }
 
 dependencies {
@@ -40,7 +25,7 @@ dependencies {
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Meteor
-    modImplementation "meteordevelopment:meteor-client:${project.meteor_version}"
+    modImplementation "meteordevelopment:meteor-client:${project.meteor_version}-SNAPSHOT"
     modImplementation "baritone:fabric:${project.minecraft_version}-SNAPSHOT"
 
     //litematica
@@ -51,7 +36,7 @@ dependencies {
 
 processResources {
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand "version": project.version, "mc_version": project.minecraft_version
     }
 }
 
