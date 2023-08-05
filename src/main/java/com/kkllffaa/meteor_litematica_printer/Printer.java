@@ -80,14 +80,14 @@ public class Printer extends Module {
 			.defaultValue(false)
 			.build()
 	);
-	
+
 	private final Setting<Boolean> airPlace = sgGeneral.add(new BoolSetting.Builder()
 			.name("air-place")
 			.description("Allow the bot to place in the air.")
 			.defaultValue(true)
 			.build()
 	);
-	
+
 	private final Setting<Boolean> placeThroughWall = sgGeneral.add(new BoolSetting.Builder()
 			.name("Place Through Wall")
 			.description("Allow the bot to place through walls.")
@@ -191,8 +191,8 @@ public class Printer extends Module {
     private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
 
 
-	// TODO: Add an option for smooth rotation. Make it look legit. 
-	// Might use liquidbounce RotationUtils to make it happen.	
+	// TODO: Add an option for smooth rotation. Make it look legit.
+	// Might use liquidbounce RotationUtils to make it happen.
 	// https://github.com/CCBlueX/LiquidBounce/blob/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/utils/aiming/RotationsUtil.kt#L257
 
 	public Printer() {
@@ -227,20 +227,20 @@ public class Printer extends Module {
 		}
 
 		toSort.clear();
-		
+
 
 		if (timer >= printing_delay.get()) {
 			BlockIterator.register(printing_range.get() + 1, printing_range.get() + 1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				if (
-						mc.player.getBlockPos().isWithinDistance(pos, printing_range.get()) 
-						&& blockState.getMaterial().isReplaceable()
-						&& !required.getMaterial().isLiquid()
-						&& !required.isAir() 
-						&& blockState.getBlock() != required.getBlock() 
-						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos) 
-						&& !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1)) 
+						mc.player.getBlockPos().isWithinDistance(pos, printing_range.get())
+						&& blockState.isReplaceable()
+						&& !required.isLiquid()
+						&& !required.isAir()
+						&& blockState.getBlock() != required.getBlock()
+						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos)
+						&& !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1))
 						&& required.canPlaceAt(mc.world, pos)
 					) {
 					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
@@ -249,19 +249,19 @@ public class Printer extends Module {
 						airPlace.get()
 						&& placeThroughWall.get()
 						|| !airPlace.get()
-						&& !placeThroughWall.get() 
+						&& !placeThroughWall.get()
 						&&  isBlockInLineOfSight
 						&& MyUtils.getVisiblePlaceSide(
 							pos,
-							required, 
+							required,
 							printing_range.get(),
 							advanced.get() ? dir(required) : null
 						) != null
 						|| airPlace.get()
-						&& !placeThroughWall.get() 
+						&& !placeThroughWall.get()
 						&& isBlockInLineOfSight
 						|| !airPlace.get()
-						&& placeThroughWall.get() 
+						&& placeThroughWall.get()
 						&& BlockUtils.getPlaceSide(pos) != null
 					) {
 						if (!whitelistenabled.get() || whitelist.get().contains(required.getBlock())) {
@@ -270,7 +270,7 @@ public class Printer extends Module {
 					}
 				}
 			});
-			
+
 			BlockIterator.after(() -> {
 				//if (!tosort.isEmpty()) info(tosort.toString());
 
@@ -310,18 +310,18 @@ public class Printer extends Module {
 	}
 
 	public boolean place(BlockState required, BlockPos pos) {
-		
+
 		if (mc.player == null || mc.world == null) return false;
-		if (!mc.world.getBlockState(pos).getMaterial().isReplaceable()) return false;
-		
+		if (!mc.world.getBlockState(pos).isReplaceable()) return false;
+
 		Direction wantedSide = advanced.get() ? dir(required) : null;
 
 
-    	Direction placeSide = placeThroughWall.get() ? 
+    	Direction placeSide = placeThroughWall.get() ?
     						MyUtils.getPlaceSide(pos, wantedSide)
     						: MyUtils.getVisiblePlaceSide(
-    								pos, 
-    								required, 
+    								pos,
+    								required,
     								printing_range.get(),
     								wantedSide
 							);
@@ -331,15 +331,15 @@ public class Printer extends Module {
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
 		if (mc.player == null) return false;
-		
+
 		int selectedSlot = mc.player.getInventory().selectedSlot;
 		boolean isCreative = mc.player.getAbilities().creativeMode;
 		ItemStack requiredItemStack = item.getDefaultStack();
 		NbtCompound nbt = MyUtils.getNbtFromBlockState(requiredItemStack, state);
 		requiredItemStack.setNbt(nbt);
-		FindItemResult result = InvUtils.find(item); 
-		
-		
+		FindItemResult result = InvUtils.find(item);
+
+
 		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in creative
 
 		if (
@@ -348,7 +348,7 @@ public class Printer extends Module {
 			isCreative &&
 			mc.player.getMainHandStack().getItem() == item &&
 			ItemStack
-			.areNbtEqual(
+			.canCombine(
 			mc.player.getMainHandStack()
 			,
 			requiredItemStack)
@@ -366,7 +366,7 @@ public class Printer extends Module {
 			usedSlot != -1 &&
 			mc.player.getInventory().getStack(usedSlot).getItem() == item &&
 			ItemStack
-			.areNbtEqual(
+			.canCombine(
 			mc.player.getInventory().getStack(usedSlot),
 			requiredItemStack)
 		) {
@@ -386,8 +386,8 @@ public class Printer extends Module {
 			result.found() &&
 			result.slot() != -1 &&
 			ItemStack
-			.areNbtEqual(
-			requiredItemStack, 
+			.canCombine(
+			requiredItemStack,
 			mc.player.getInventory().getStack(result.slot())
 			)
 		) {
