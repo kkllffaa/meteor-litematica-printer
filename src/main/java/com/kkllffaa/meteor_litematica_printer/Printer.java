@@ -1,10 +1,5 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Supplier;
-
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
@@ -12,13 +7,7 @@ import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.renderer.ShapeMode;
-import meteordevelopment.meteorclient.settings.BlockListSetting;
-import meteordevelopment.meteorclient.settings.BoolSetting;
-import meteordevelopment.meteorclient.settings.ColorSetting;
-import meteordevelopment.meteorclient.settings.EnumSetting;
-import meteordevelopment.meteorclient.settings.IntSetting;
-import meteordevelopment.meteorclient.settings.Setting;
-import meteordevelopment.meteorclient.settings.SettingGroup;
+import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
@@ -42,122 +31,127 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.Supplier;
+
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
 	private final SettingGroup sgWhitelist = settings.createGroup("Whitelist");
     private final SettingGroup sgRendering = settings.createGroup("Rendering");
 
 	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
-			.name("printing-range")
-			.description("The block place range.")
-			.defaultValue(2)
-			.min(1).sliderMin(1)
-			.max(6).sliderMax(6)
-			.build()
+        .name("printing-range")
+        .description("The block place range.")
+        .defaultValue(2)
+        .min(1).sliderMin(1)
+        .max(6).sliderMax(6)
+        .build()
 	);
 
 	private final Setting<Integer> printing_delay = sgGeneral.add(new IntSetting.Builder()
-			.name("printing-delay")
-			.description("Delay between printing blocks in ticks.")
-			.defaultValue(2)
-			.min(0).sliderMin(0)
-			.max(100).sliderMax(40)
-			.build()
+        .name("printing-delay")
+        .description("Delay between printing blocks in ticks.")
+        .defaultValue(2)
+        .min(0).sliderMin(0)
+        .max(100).sliderMax(40)
+        .build()
 	);
 
 	private final Setting<Integer> bpt = sgGeneral.add(new IntSetting.Builder()
-			.name("blocks/tick")
-			.description("How many blocks place per tick.")
-			.defaultValue(1)
-			.min(1).sliderMin(1)
-			.max(100).sliderMax(100)
-			.build()
+        .name("blocks/tick")
+        .description("How many blocks place per tick.")
+        .defaultValue(1)
+        .min(1).sliderMin(1)
+        .max(100).sliderMax(100)
+        .build()
 	);
 
 	private final Setting<Boolean> advanced = sgGeneral.add(new BoolSetting.Builder()
-			.name("advanced")
-			.description("Respect block rotation (places blocks in weird places in singleplayer, multiplayer should work fine).")
-			.defaultValue(false)
-			.build()
+        .name("advanced")
+        .description("Respect block rotation (places blocks in weird places in singleplayer, multiplayer should work fine).")
+        .defaultValue(false)
+        .build()
 	);
 
 	private final Setting<Boolean> airPlace = sgGeneral.add(new BoolSetting.Builder()
-			.name("air-place")
-			.description("Allow the bot to place in the air.")
-			.defaultValue(true)
-			.build()
+        .name("air-place")
+        .description("Allow the bot to place in the air.")
+        .defaultValue(true)
+        .build()
 	);
 
 	private final Setting<Boolean> placeThroughWall = sgGeneral.add(new BoolSetting.Builder()
-			.name("Place Through Wall")
-			.description("Allow the bot to place through walls.")
-			.defaultValue(true)
-			.build()
+        .name("place-through-walls")
+        .description("Allow the bot to place through walls.")
+        .defaultValue(true)
+        .build()
 	);
 
 	private final Setting<Boolean> swing = sgGeneral.add(new BoolSetting.Builder()
-			.name("swing")
-			.description("Swing hand when placing.")
-			.defaultValue(false)
-			.build()
+        .name("swing")
+        .description("Swing hand when placing.")
+        .defaultValue(false)
+        .build()
 	);
 
     private final Setting<Boolean> returnHand = sgGeneral.add(new BoolSetting.Builder()
-			.name("return-slot")
-			.description("Return to old slot.")
-			.defaultValue(false)
-			.build()
+        .name("return-slot")
+        .description("Return to old slot.")
+        .defaultValue(false)
+        .build()
     );
 
     private final Setting<Boolean> rotate = sgGeneral.add(new BoolSetting.Builder()
-			.name("rotate")
-			.description("Rotate to the blocks being placed.")
-			.defaultValue(false)
-			.build()
+        .name("rotate")
+        .description("Rotate to the blocks being placed.")
+        .defaultValue(false)
+        .build()
     );
 
     private final Setting<Boolean> clientSide = sgGeneral.add(new BoolSetting.Builder()
-			.name("Client side Rotation")
-			.description("Rotate to the blocks being placed on client side.")
-			.defaultValue(false)
-			.visible(rotate::get)
-			.build()
+        .name("Client side Rotation")
+        .description("Rotate to the blocks being placed on client side.")
+        .defaultValue(false)
+        .visible(rotate::get)
+        .build()
     );
 
 	private final Setting<Boolean> dirtgrass = sgGeneral.add(new BoolSetting.Builder()
-			.name("dirt-as-grass")
-			.description("Use dirt instead of grass.")
-			.defaultValue(true)
-			.build()
+        .name("dirt-as-grass")
+        .description("Use dirt instead of grass.")
+        .defaultValue(true)
+        .build()
 	);
 
     private final Setting<SortAlgorithm> firstAlgorithm = sgGeneral.add(new EnumSetting.Builder<SortAlgorithm>()
-			.name("first-sorting-mode")
-			.description("The blocks you want to place first.")
-			.defaultValue(SortAlgorithm.None)
-			.build()
+        .name("first-sorting-mode")
+        .description("The blocks you want to place first.")
+        .defaultValue(SortAlgorithm.None)
+        .build()
 	);
 
     private final Setting<SortingSecond> secondAlgorithm = sgGeneral.add(new EnumSetting.Builder<SortingSecond>()
-			.name("second-sorting-mode")
-			.description("Second pass of sorting eg. place first blocks higher and closest to you.")
-			.defaultValue(SortingSecond.None)
-			.visible(()-> firstAlgorithm.get().applySecondSorting)
-			.build()
+        .name("second-sorting-mode")
+        .description("Second pass of sorting eg. place first blocks higher and closest to you.")
+        .defaultValue(SortingSecond.None)
+        .visible(()-> firstAlgorithm.get().applySecondSorting)
+        .build()
 	);
 
     private final Setting<Boolean> whitelistenabled = sgWhitelist.add(new BoolSetting.Builder()
-			.name("whitelist-enabled")
-			.description("Only place selected blocks.")
-			.defaultValue(false)
-			.build()
+        .name("whitelist-enabled")
+        .description("Only place selected blocks.")
+        .defaultValue(false)
+        .build()
 	);
 
     private final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
-			.name("whitelist")
-			.description("Blocks to place.")
-			.visible(whitelistenabled::get)
-			.build()
+        .name("whitelist")
+        .description("Blocks to place.")
+        .visible(whitelistenabled::get)
+        .build()
 	);
 
     private final Setting<Boolean> renderBlocks = sgRendering.add(new BoolSetting.Builder()
