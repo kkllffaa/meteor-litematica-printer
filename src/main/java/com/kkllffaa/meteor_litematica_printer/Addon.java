@@ -9,24 +9,24 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public class Addon extends MeteorAddon {
-	public static final Logger LOG = LogManager.getLogger();
-	public static final Category CATEGORY = new Category("Printer", new ItemStack(Items.PINK_CARPET));
+    public static final Logger LOG = LogManager.getLogger();
+    public static final Category CATEGORY = new Category("Printer", new ItemStack(Items.PINK_CARPET));
 
-	@Override
-	public void onInitialize() {
-		LOG.info("Initializing litematica printer");
+    @Override
+    public void onInitialize() {
+        LOG.info("Initializing litematica printer");
 
-		// Modules
-		Modules.get().add(new Printer());
-	}
+        // Modules
+        Modules.get().add(new Printer());
+    }
 
     @Override
     public String getPackage() {
         return "com.kkllffaa.meteor_litematica_printer";
     }
 
-	@Override
-	public void onRegisterCategories() {
-		Modules.registerCategory(CATEGORY);
-	}
+    @Override
+    public void onRegisterCategories() {
+        Modules.registerCategory(CATEGORY);
+    }
 }
