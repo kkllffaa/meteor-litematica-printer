@@ -81,7 +81,7 @@ public class MyUtils {
 			Box aabb = collisionShape.getBoundingBox();
             for (Vec3d placementMultiplier : aabbSideMultipliers(direction.getOpposite())) {
             	double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
-				if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+				if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null && direction != Direction.UP && direction != Direction.DOWN) && !mc.player.isCreative()) {
 					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
 						if (placementMultiplier.y <= 0.5) continue;
 					} else {
@@ -96,8 +96,9 @@ public class MyUtils {
      						
      			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, testHitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
      			Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
-     			if (blockHorizontalOrientation != null 
-     					&& testHorizontalDirection.getOpposite() != blockHorizontalOrientation) continue;
+     			if (blockHorizontalOrientation != null
+     					&& ( 	testHorizontalDirection.getAxis() != blockHorizontalOrientation.getAxis()
+     							|| testHorizontalDirection.getOpposite() == blockHorizontalOrientation)) continue;
      			HitResult res = RayTraceUtils.rayTraceTowards(mc.player, rot, range, false);
      			BlockHitResult blockHitRes = ((BlockHitResult) res);
      			if(
@@ -160,6 +161,7 @@ public class MyUtils {
 		return isBlockNormalCube(placeAgainstState) || 
         		placeAgainstState.getBlock() == Blocks.GLASS || 
         		placeAgainstState.getBlock() instanceof StainedGlassBlock ||
+        		placeAgainstState.getBlock() instanceof StairsBlock ||
         		placeAgainstState.getBlock() instanceof SlabBlock && 
         		(
 	        		placeAgainstState.get(SlabBlock.TYPE) != SlabType.BOTTOM &&  
@@ -171,7 +173,7 @@ public class MyUtils {
 	
 	public static boolean isBlockInLineOfSight(BlockPos placeAt, BlockState placeAtState) {
 		Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
-		Vec3d placeAtVec = new Vec3d(placeAt.getX(), placeAt.getY(), placeAt.getZ());
+		Vec3d placeAtVec = new Vec3d(placeAt.getX() + 0.5, placeAt.getY() + 0.5, placeAt.getZ() + 0.5);
 		
 		ShapeType type = RaycastContext.ShapeType.COLLIDER;
 		FluidHandling fluid = RaycastContext.FluidHandling.NONE;
@@ -179,40 +181,40 @@ public class MyUtils {
 		RaycastContext context =
 			new RaycastContext(playerHead, placeAtVec, type, fluid, mc.player);
 		BlockHitResult bhr = mc.world.raycast(context);
-
 			// check line of sight		
 		return (bhr.getType() == HitResult.Type.MISS);
 		
 	}
 	
-	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, Axis wantedAxies, int range, Direction requiredDir) {
+	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, int range, Direction requiredDir) {
 		if (mc.world == null) return null;
 		for (Direction against : Direction.values()) {
             BetterBlockPos placeAgainstPos = new BetterBlockPos(placeAt.getX(), placeAt.getY(), placeAt.getZ()).relative(against);
             // BlockState placeAgainstState = mc.world.getBlockState(placeAgainstPos);
 
-            if(wantedAxies != null && against.getAxis() != wantedAxies)
+            if(wantedAxies != null && against.getAxis() != wantedAxies || blockHalf != null && (against == Direction.UP && blockHalf == BlockHalf.BOTTOM || against == Direction.DOWN && blockHalf == BlockHalf.TOP))
             	continue;
             
-            if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
-				if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
-					if (against == Direction.UP) continue;
-				} else {
+            if((slabType != null && slabType != SlabType.DOUBLE) && !mc.player.isCreative()) {
+				if (slabType == SlabType.BOTTOM) {
 					if (against == Direction.DOWN) continue;
+				} else {
+					if (against == Direction.UP) continue;
 				}
 			}
+
 
             if(!canPlaceAgainst(
         		placeAtState,
 				mc.world.getBlockState(placeAgainstPos),
 				against
-			))
+			) || BlockUtils.isClickable(mc.world.getBlockState(placeAgainstPos).getBlock()))
 			continue;
             Box aabb = mc.world.getBlockState(placeAgainstPos).getCollisionShape(mc.world, placeAgainstPos).getBoundingBox();
             
             for (Vec3d placementMultiplier : aabbSideMultipliers(against)) {
             	 double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
-            	 if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+            	 if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null && against != Direction.DOWN && against != Direction.UP) && !mc.player.isCreative()) {
  					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
  						if (placementMultiplier.y <= 0.5) continue;
  					} else {
@@ -224,8 +226,12 @@ public class MyUtils {
                  
                 Vec3d hitPos = new Vec3d(placeX, placeY, placeZ);
      	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
-     						
      			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+				
+				Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
+				if (blockHorizontalOrientation != null
+						&& ( 	testHorizontalDirection.getAxis() != blockHorizontalOrientation.getAxis()
+								|| testHorizontalDirection.getOpposite() == blockHorizontalOrientation)) continue;
      			HitResult res = RayTraceUtils.rayTraceTowards(mc.player, rot, range, false);
      			BlockHitResult blockHitRes = ((BlockHitResult) res);
 
@@ -245,14 +251,14 @@ public class MyUtils {
 		return null;
 	}
 
-	public static Direction getPlaceSide(BlockPos blockPos, SlabType slabType, BlockHalf blockHalf, Axis wantedAxies, Direction requiredDir) {
+	public static Direction getPlaceSide(BlockPos blockPos, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, Direction requiredDir) {
         for (Direction side : Direction.values()) {
         	
             BlockPos neighbor = blockPos.offset(side);
             Direction side2 = side.getOpposite();
             
-        	if(wantedAxies != null && side.getAxis() != wantedAxies)
-            	continue;
+        	if(wantedAxies != null && side.getAxis() != wantedAxies || blockHalf != null && (side == Direction.UP && blockHalf == BlockHalf.BOTTOM || side == Direction.DOWN && blockHalf == BlockHalf.TOP))
+        		continue;
         	
         	if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
 				if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
@@ -273,6 +279,16 @@ public class MyUtils {
 
             // Check if neighbour is a fluid
             if (!state.getFluidState().isEmpty()) continue;
+            
+            Vec3d hitPos = new Vec3d(neighbor.getX(), neighbor.getY(), neighbor.getZ());
+ 	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
+ 			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+			
+			Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
+			if (blockHorizontalOrientation != null
+					&& ( 	testHorizontalDirection.getAxis() != blockHorizontalOrientation.getAxis()
+							|| testHorizontalDirection.getOpposite() == blockHorizontalOrientation)) continue;
+            
             return side2;
         }
 

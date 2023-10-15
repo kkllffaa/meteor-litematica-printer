@@ -250,6 +250,7 @@ public class Printer extends Module {
 					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
 			    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
 			    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
+			    	Direction wantedHorizontalOrientation = advanced.get() && required.contains(Properties.HORIZONTAL_FACING) ? required.get(Properties.HORIZONTAL_FACING) : null;
 			    	Axis wantedAxies = advanced.get() && required.contains(Properties.AXIS) ? required.get(Properties.AXIS) : null;
 
 					if(
@@ -263,6 +264,7 @@ public class Printer extends Module {
 							required,
 							wantedSlabType, 
 							wantedBlockHalf,
+							wantedHorizontalOrientation,
 							wantedAxies,
 							printing_range.get(),
 							advanced.get() ? dir(required) : null
@@ -335,6 +337,7 @@ public class Printer extends Module {
     								pos,
     								wantedSlabType, 
     								wantedBlockHalf,
+    								wantedHorizontalOrientation,
     								wantedAxies,
     								wantedSide)
     						: MyUtils.getVisiblePlaceSide(
@@ -342,6 +345,7 @@ public class Printer extends Module {
     								required,
     								wantedSlabType, 
     								wantedBlockHalf,
+    								wantedHorizontalOrientation,
     								wantedAxies,
     								printing_range.get(),
     								wantedSide
