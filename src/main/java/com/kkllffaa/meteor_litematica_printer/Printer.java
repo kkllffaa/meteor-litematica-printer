@@ -30,6 +30,7 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -245,6 +246,8 @@ public class Printer extends Module {
 						&& required.canPlaceAt(mc.world, pos)
 					) {
 					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
+			    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
+			    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
 
 					if(
 						airPlace.get()
@@ -255,6 +258,8 @@ public class Printer extends Module {
 						&& MyUtils.getVisiblePlaceSide(
 							pos,
 							required,
+							wantedSlabType, 
+							wantedBlockHalf,
 							printing_range.get(),
 							advanced.get() ? dir(required) : null
 						) != null
@@ -316,20 +321,27 @@ public class Printer extends Module {
 		if (!mc.world.getBlockState(pos).isReplaceable()) return false;
 
 		Direction wantedSide = advanced.get() ? dir(required) : null;
+    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
+    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
 
 
     	Direction placeSide = placeThroughWall.get() ?
-    						MyUtils.getPlaceSide(pos, wantedSide)
+    						MyUtils.getPlaceSide(
+    								pos,
+    								wantedSlabType, 
+    								wantedBlockHalf,
+    								wantedSide)
     						: MyUtils.getVisiblePlaceSide(
     								pos,
     								required,
+    								wantedSlabType, 
+    								wantedBlockHalf,
     								printing_range.get(),
     								wantedSide
 							);
     	
-    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
 
-        return MyUtils.place(pos, placeSide, wantedSlabType, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {

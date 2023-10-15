@@ -20,10 +20,13 @@ import net.minecraft.block.ShulkerBoxBlock;
 import net.minecraft.block.SlabBlock;
 import net.minecraft.block.StainedGlassBlock;
 import net.minecraft.block.StairsBlock;
+import net.minecraft.block.TrapdoorBlock;
+import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
+import net.minecraft.state.property.Properties;
 import net.minecraft.state.property.Property;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -40,7 +43,7 @@ import net.minecraft.world.RaycastContext.ShapeType;
 
 public class MyUtils {
 	
-	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
+	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
 		if (mc.player == null) return false;
 		if (!canPlace(blockPos)) return false;
 
@@ -49,6 +52,7 @@ public class MyUtils {
 		BlockPos neighbour;
 
 		if (direction == null) {
+			if ((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) return false;
             direction = Direction.UP;
 			neighbour = blockPos;
 		} else if(airPlace) {
@@ -76,8 +80,8 @@ public class MyUtils {
 			Box aabb = collisionShape.getBoundingBox();
             for (Vec3d placementMultiplier : aabbSideMultipliers(direction.getOpposite())) {
             	double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
-				if(slabType != null && slabType != SlabType.DOUBLE && !mc.player.isCreative()) {
-					if (slabType == SlabType.BOTTOM) {
+				if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
 						if (placementMultiplier.y <= 0.5) continue;
 					} else {
 						if (placementMultiplier.y > 0.5) continue;
@@ -177,7 +181,7 @@ public class MyUtils {
 		
 	}
 	
-	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, int range, Direction requiredDir) {
+	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, int range, Direction requiredDir) {
 		if (mc.world == null) return null;
 		for (Direction against : Direction.values()) {
             BetterBlockPos placeAgainstPos = new BetterBlockPos(placeAt.getX(), placeAt.getY(), placeAt.getZ()).relative(against);
@@ -185,6 +189,14 @@ public class MyUtils {
 
             if(requiredDir != null && requiredDir != against && requiredDir != Direction.UP)
             	continue;
+            
+            if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+				if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
+					if (against == Direction.UP) continue;
+				} else {
+					if (against == Direction.DOWN) continue;
+				}
+			}
             
             if(!canPlaceAgainst(
         		placeAtState,
@@ -196,6 +208,13 @@ public class MyUtils {
             
             for (Vec3d placementMultiplier : aabbSideMultipliers(against)) {
             	 double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
+            	 if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+ 					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
+ 						if (placementMultiplier.y <= 0.5) continue;
+ 					} else {
+ 						if (placementMultiplier.y > 0.5) continue;
+ 					}
+ 				}
                  double placeY = placeAgainstPos.y + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
                  double placeZ = placeAgainstPos.z + aabb.minZ * placementMultiplier.z + aabb.maxZ * (1 - placementMultiplier.z);
                  
@@ -222,7 +241,7 @@ public class MyUtils {
 		return null;
 	}
 
-	public static Direction getPlaceSide(BlockPos blockPos, Direction requiredDir) {
+	public static Direction getPlaceSide(BlockPos blockPos, SlabType slabType, BlockHalf blockHalf, Direction requiredDir) {
         for (Direction side : Direction.values()) {
         	
             BlockPos neighbor = blockPos.offset(side);
@@ -230,15 +249,26 @@ public class MyUtils {
             
         	if(requiredDir != null && requiredDir != side2 && requiredDir != Direction.UP)
             	continue;
+        	
+        	if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
+				if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
+					if (side2 == Direction.DOWN) continue;
+				} else {
+					if (side2 == Direction.UP) continue;
+				}
+			}
 
             BlockState state = mc.world.getBlockState(neighbor);
 
             // Check if neighbour isn't empty
-            if (state.isAir() || !BlockUtils.isClickable(state.getBlock())) continue;
+            if (state.isAir() || BlockUtils.isClickable(state.getBlock()) || state.contains(Properties.SLAB_TYPE) 
+            		&& (state.get(Properties.SLAB_TYPE) == SlabType.DOUBLE 
+            		|| side == Direction.UP && state.get(Properties.SLAB_TYPE) == SlabType.TOP 
+            		|| side == Direction.DOWN && state.get(Properties.SLAB_TYPE) == SlabType.BOTTOM 
+            		)) continue;
 
             // Check if neighbour is a fluid
             if (!state.getFluidState().isEmpty()) continue;
-ChatUtils.info("" + side2);
             return side2;
         }
 
