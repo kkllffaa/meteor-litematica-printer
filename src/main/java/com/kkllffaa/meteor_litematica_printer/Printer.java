@@ -30,6 +30,7 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -325,8 +326,10 @@ public class Printer extends Module {
     								printing_range.get(),
     								wantedSide
 							);
+    	
+    	SlabType wantedSlabType = advanced.get() ? required.get(Properties.SLAB_TYPE) : null;
 
-        return MyUtils.place(pos, placeSide, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
+        return MyUtils.place(pos, placeSide, wantedSlabType, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {

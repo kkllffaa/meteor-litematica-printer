@@ -40,7 +40,7 @@ import net.minecraft.world.RaycastContext.ShapeType;
 
 public class MyUtils {
 	
-	public static boolean place(BlockPos blockPos, Direction direction, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
+	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
 		if (mc.player == null) return false;
 		if (!canPlace(blockPos)) return false;
 
@@ -75,9 +75,16 @@ public class MyUtils {
 
 			Box aabb = collisionShape.getBoundingBox();
             for (Vec3d placementMultiplier : aabbSideMultipliers(direction.getOpposite())) {
-            	 double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
-                 double placeY = placeAgainstPos.y + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
-                 double placeZ = placeAgainstPos.z + aabb.minZ * placementMultiplier.z + aabb.maxZ * (1 - placementMultiplier.z);
+            	double placeX = placeAgainstPos.x + aabb.minX * placementMultiplier.x + aabb.maxX * (1 - placementMultiplier.x);
+				if(slabType != null && slabType != SlabType.DOUBLE && !mc.player.isCreative()) {
+					if (slabType == SlabType.BOTTOM) {
+						if (placementMultiplier.y <= 0.5) continue;
+					} else {
+						if (placementMultiplier.y > 0.5) continue;
+					}
+				}
+				double placeY = placeAgainstPos.y + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
+				double placeZ = placeAgainstPos.z + aabb.minZ * placementMultiplier.z + aabb.maxZ * (1 - placementMultiplier.z);
                  
                 Vec3d testHitPos = new Vec3d(placeX, placeY, placeZ);
      	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
