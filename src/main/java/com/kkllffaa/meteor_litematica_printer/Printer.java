@@ -327,7 +327,7 @@ public class Printer extends Module {
     								wantedSide
 							);
     	
-    	SlabType wantedSlabType = advanced.get() ? required.get(Properties.SLAB_TYPE) : null;
+    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
 
         return MyUtils.place(pos, placeSide, wantedSlabType, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
 	}
