@@ -36,6 +36,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.RaycastContext.FluidHandling;
@@ -43,7 +44,7 @@ import net.minecraft.world.RaycastContext.ShapeType;
 
 public class MyUtils {
 	
-	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
+	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
 		if (mc.player == null) return false;
 		if (!canPlace(blockPos)) return false;
 
@@ -52,7 +53,7 @@ public class MyUtils {
 		BlockPos neighbour;
 
 		if (direction == null) {
-			if ((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) return false;
+			if ((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null || blockHorizontalOrientation != null) && !mc.player.isCreative()) return false;
             direction = Direction.UP;
 			neighbour = blockPos;
 		} else if(airPlace) {
@@ -94,6 +95,9 @@ public class MyUtils {
      	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
      						
      			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, testHitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+     			Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
+     			if (blockHorizontalOrientation != null 
+     					&& testHorizontalDirection.getOpposite() != blockHorizontalOrientation) continue;
      			HitResult res = RayTraceUtils.rayTraceTowards(mc.player, rot, range, false);
      			BlockHitResult blockHitRes = ((BlockHitResult) res);
      			if(
@@ -181,13 +185,13 @@ public class MyUtils {
 		
 	}
 	
-	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, int range, Direction requiredDir) {
+	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, Axis wantedAxies, int range, Direction requiredDir) {
 		if (mc.world == null) return null;
 		for (Direction against : Direction.values()) {
             BetterBlockPos placeAgainstPos = new BetterBlockPos(placeAt.getX(), placeAt.getY(), placeAt.getZ()).relative(against);
             // BlockState placeAgainstState = mc.world.getBlockState(placeAgainstPos);
 
-            if(requiredDir != null && requiredDir != against && requiredDir != Direction.UP)
+            if(wantedAxies != null && against.getAxis() != wantedAxies)
             	continue;
             
             if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
@@ -197,7 +201,7 @@ public class MyUtils {
 					if (against == Direction.DOWN) continue;
 				}
 			}
-            
+
             if(!canPlaceAgainst(
         		placeAtState,
 				mc.world.getBlockState(placeAgainstPos),
@@ -241,13 +245,13 @@ public class MyUtils {
 		return null;
 	}
 
-	public static Direction getPlaceSide(BlockPos blockPos, SlabType slabType, BlockHalf blockHalf, Direction requiredDir) {
+	public static Direction getPlaceSide(BlockPos blockPos, SlabType slabType, BlockHalf blockHalf, Axis wantedAxies, Direction requiredDir) {
         for (Direction side : Direction.values()) {
         	
             BlockPos neighbor = blockPos.offset(side);
             Direction side2 = side.getOpposite();
             
-        	if(requiredDir != null && requiredDir != side2 && requiredDir != Direction.UP)
+        	if(wantedAxies != null && side.getAxis() != wantedAxies)
             	continue;
         	
         	if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null) && !mc.player.isCreative()) {
@@ -304,5 +308,28 @@ public class MyUtils {
         }
     }
 
+	public static Direction getHorizontalDirectionFromYaw(float yaw) {
+        yaw %= 360.0F;
+        if (yaw < 0) {
+            yaw += 360.0F;
+        }
 
+        if ((yaw >= 45 && yaw < 135) || (yaw >= -315 && yaw < -225)) {
+            return Direction.WEST;
+        } else if ((yaw >= 135 && yaw < 225) || (yaw >= -225 && yaw < -135)) {
+            return Direction.NORTH;
+        } else if ((yaw >= 225 && yaw < 315) || (yaw >= -135 && yaw < -45)) {
+            return Direction.EAST;
+        } else {
+            return Direction.SOUTH;
+        }
+    }
+	
+	public static Direction getVerticalDirectionFromPitch(float pitch) {
+        if (pitch >= 0.0F) {
+            return Direction.UP;
+        } else {
+            return Direction.DOWN;
+        }
+    }
 }
