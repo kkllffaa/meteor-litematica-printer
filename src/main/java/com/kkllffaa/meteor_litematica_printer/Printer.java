@@ -5,6 +5,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.function.Supplier;
 
+import com.mojang.authlib.minecraft.client.MinecraftClient;
+
 import fi.dy.masa.litematica.data.DataManager;
 import fi.dy.masa.litematica.world.SchematicWorldHandler;
 import fi.dy.masa.litematica.world.WorldSchematic;
@@ -30,15 +32,24 @@ import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.HopperBlock;
+import net.minecraft.block.HorizontalFacingBlock;
+import net.minecraft.block.StairsBlock;
+import net.minecraft.block.enums.BlockHalf;
+import net.minecraft.block.enums.SlabType;
+import net.minecraft.datafixer.fix.ChunkPalettedStorageFix.Facing;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Pair;
+import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
 
@@ -244,6 +255,11 @@ public class Printer extends Module {
 						&& required.canPlaceAt(mc.world, pos)
 					) {
 					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
+			    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
+			    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
+			    	Direction wantedHorizontalOrientation = advanced.get() && required.contains(Properties.HORIZONTAL_FACING) ? required.get(Properties.HORIZONTAL_FACING) : null;
+			    	Axis wantedAxies = advanced.get() && required.contains(Properties.AXIS) ? required.get(Properties.AXIS) : null;
+			    	Direction wantedHopperOrientation = advanced.get() && required.contains(Properties.HOPPER_FACING) ? required.get(Properties.HOPPER_FACING) : null;
 
 					if(
 						airPlace.get()
@@ -254,6 +270,10 @@ public class Printer extends Module {
 						&& MyUtils.getVisiblePlaceSide(
 							pos,
 							required,
+							wantedSlabType, 
+							wantedBlockHalf,
+							wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
+							wantedAxies,
 							printing_range.get(),
 							advanced.get() ? dir(required) : null
 						) != null
@@ -315,18 +335,35 @@ public class Printer extends Module {
 		if (!mc.world.getBlockState(pos).isReplaceable()) return false;
 
 		Direction wantedSide = advanced.get() ? dir(required) : null;
-
-
+    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
+    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
+    	Direction wantedHorizontalOrientation = advanced.get() && required.contains(Properties.HORIZONTAL_FACING) ? required.get(Properties.HORIZONTAL_FACING) : null;
+    	Axis wantedAxies = advanced.get() && required.contains(Properties.AXIS) ? required.get(Properties.AXIS) : null;
+    	Direction wantedHopperOrientation = advanced.get() && required.contains(Properties.HOPPER_FACING) ? required.get(Properties.HOPPER_FACING) : null;
+    	Direction wantedFace = advanced.get() && required.contains(Properties.FACING) ? required.get(Properties.FACING) : null;
+    	
     	Direction placeSide = placeThroughWall.get() ?
-    						MyUtils.getPlaceSide(pos, wantedSide)
+    						MyUtils.getPlaceSide(
+    								pos,
+    								required,
+    								wantedSlabType, 
+    								wantedBlockHalf,
+    								wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
+    								wantedAxies,
+    								wantedSide)
     						: MyUtils.getVisiblePlaceSide(
     								pos,
     								required,
+    								wantedSlabType, 
+    								wantedBlockHalf,
+    								wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
+    								wantedAxies,
     								printing_range.get(),
     								wantedSide
 							);
+    	
 
-        return MyUtils.place(pos, placeSide, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
