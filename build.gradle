@@ -26,7 +26,7 @@ dependencies {
 
     // Meteor
     modImplementation "meteordevelopment:meteor-client:${project.meteor_version}-SNAPSHOT"
-    modImplementation "baritone:fabric:${project.minecraft_version}-SNAPSHOT"
+    modImplementation "baritone:fabric:${project.baritone_version}-SNAPSHOT"
 
     //litematica
     modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
