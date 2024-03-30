@@ -20,10 +20,10 @@ public class Addon extends MeteorAddon {
 		Modules.get().add(new Printer());
 	}
 
-    @Override
-    public String getPackage() {
-        return "com.kkllffaa.meteor_litematica_printer";
-    }
+	@Override
+	public String getPackage() {
+		return "com.kkllffaa.meteor_litematica_printer";
+	}
 
 	@Override
 	public void onRegisterCategories() {
