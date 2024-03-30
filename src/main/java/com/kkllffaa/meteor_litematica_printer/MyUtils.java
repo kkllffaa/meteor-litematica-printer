@@ -3,10 +3,15 @@ package com.kkllffaa.meteor_litematica_printer;
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
 
+import java.util.Objects;
+import java.util.function.Predicate;
+
 import baritone.api.utils.BetterBlockPos;
 import baritone.api.utils.RayTraceUtils;
 import baritone.api.utils.Rotation;
 import baritone.api.utils.RotationUtils;
+import meteordevelopment.meteorclient.utils.player.FindItemResult;
+import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import net.minecraft.block.AmethystClusterBlock;
@@ -32,6 +37,8 @@ import net.minecraft.block.StairsBlock;
 import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
+import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
@@ -516,5 +523,30 @@ public class MyUtils {
 		} else {
 			return Direction.DOWN;
 		}
+	}
+
+	public static boolean compareItems(ItemStack first, ItemStack second, boolean compareNBT) {
+		if (first.isOf(second.getItem())) {
+			if (compareNBT) {
+				return Objects.equals(first.getNbt(), second.getNbt());
+			}
+			return true;
+		}
+		return false;
+	}
+
+	public static FindItemResult findEmptyOrFirstInHotbar(int lastUsed) {
+		if (mc.player == null) {
+			return new FindItemResult(-1, 0);
+		}
+		if (mc.player.getMainHandStack().isEmpty()) {
+			return new FindItemResult(mc.player.getInventory().selectedSlot, 0);
+		}
+		if (mc.player.getInventory().getStack(lastUsed).isEmpty()) {
+			return new FindItemResult(lastUsed, 0);
+		}
+
+		FindItemResult empty = InvUtils.find(ItemStack::isEmpty, 0, 8);
+		return empty.found() ? empty : new FindItemResult(0, 0);
 	}
 }

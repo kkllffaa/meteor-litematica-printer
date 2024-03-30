@@ -32,6 +32,7 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -359,91 +360,69 @@ public class Printer extends Module {
 		if (mc.player == null)
 			return false;
 
-		int selectedSlot = mc.player.getInventory().selectedSlot;
+		PlayerInventory inventory = mc.player.getInventory();
 		boolean isCreative = mc.player.getAbilities().creativeMode;
 		ItemStack requiredItemStack = item.getDefaultStack();
 		NbtCompound nbt = MyUtils.getNbtFromBlockState(requiredItemStack, state);
 		requiredItemStack.setNbt(nbt);
-		FindItemResult result = InvUtils.find(item);
 
 		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in
 		// creative
 
-		if (!isCreative && mc.player.getMainHandStack().getItem() == item ||
-				isCreative && mc.player.getMainHandStack().getItem() == item &&
-						ItemStack.canCombine(mc.player.getMainHandStack(), requiredItemStack)) {
-			if (action.get()) {
-				usedSlot = mc.player.getInventory().selectedSlot;
-				return true;
-			} else
-				return false;
+		// place if in main hand
+		if (MyUtils.compareItems(mc.player.getMainHandStack(), requiredItemStack, isCreative)) {
+			usedSlot = inventory.selectedSlot;
+			return action.get();
+		}
+		if (!canSwitchSlot)
+			return false;
 
-		} else if (!isCreative && usedSlot != -1 && mc.player.getInventory().getStack(usedSlot).getItem() == item ||
-				isCreative && usedSlot != -1 && mc.player.getInventory().getStack(usedSlot).getItem() == item &&
-						ItemStack.canCombine(mc.player.getInventory().getStack(usedSlot), requiredItemStack)) {
+		// switch and place if last used slot has item
+		if (usedSlot != -1
+				&& MyUtils.compareItems(inventory.getStack(usedSlot), requiredItemStack, isCreative)) {
 			InvUtils.swap(usedSlot, returnHand.get());
-			if (action.get()) {
-				return true;
-			} else {
-				InvUtils.swap(selectedSlot, returnHand.get());
-				return false;
-			}
+			return action.get();
+		}
 
-		} else if (!isCreative && result.found() ||
-				isCreative && result.found() && result.slot() != -1 &&
-						ItemStack.canCombine(requiredItemStack, mc.player.getInventory().getStack(result.slot()))) {
+		FindItemResult result = InvUtils.find(it -> MyUtils.compareItems(it, requiredItemStack, isCreative), 0,
+				inventory.main.size());
+		if (result.found()) {
+			// switch and place if item is found in hotbar
 			if (result.isHotbar()) {
 				InvUtils.swap(result.slot(), returnHand.get());
-
-				if (action.get()) {
-					usedSlot = mc.player.getInventory().selectedSlot;
-					return true;
-				} else {
-					InvUtils.swap(selectedSlot, returnHand.get());
-					return false;
-				}
-
-			} else if (result.isMain()) {
-				FindItemResult empty = InvUtils.findEmpty();
-
-				if (empty.found() && empty.isHotbar()) {
-					InvUtils.move().from(result.slot()).toHotbar(empty.slot());
-					InvUtils.swap(empty.slot(), returnHand.get());
-
-					if (action.get()) {
-						usedSlot = mc.player.getInventory().selectedSlot;
-						return true;
-					} else {
-						InvUtils.swap(selectedSlot, returnHand.get());
-						return false;
-					}
-
-				} else if (usedSlot != -1) {
-					InvUtils.move().from(result.slot()).toHotbar(usedSlot);
-					InvUtils.swap(usedSlot, returnHand.get());
-
-					if (action.get()) {
-						return true;
-					} else {
-						InvUtils.swap(selectedSlot, returnHand.get());
-						return false;
-					}
-
-				} else
-					return false;
-			} else
-				return false;
-		} else if (isCreative) {
-			int slot = 0;
-			FindItemResult fir = InvUtils.find(ItemStack::isEmpty, 0, 8);
-			if (fir.found()) {
-				slot = fir.slot();
+				usedSlot = result.slot();
+				return action.get();
 			}
-			mc.getNetworkHandler().sendPacket(new CreativeInventoryActionC2SPacket(36 + slot, requiredItemStack));
-			InvUtils.swap(slot, returnHand.get());
-			return true;
-		} else
-			return false;
+			if (result.isMain()) {
+				// find empty slot in order main hand > last used > rest of hotbar > first slot
+				// if hotbar is full
+				FindItemResult empty = MyUtils.findEmptyOrFirstInHotbar(usedSlot);
+
+				InvUtils.quickSwap().fromId(empty.slot()).to(result.slot());
+
+				if (!empty.isMainHand()) {
+					InvUtils.swap(empty.slot(), returnHand.get());
+				}
+				usedSlot = empty.slot();
+				return action.get();
+			}
+		}
+
+		if (isCreative) {
+			// find empty slot in order main hand > last used > rest of hotbar > first slot
+			// if hotbar is full
+			FindItemResult empty = MyUtils.findEmptyOrFirstInHotbar(usedSlot);
+
+			mc.getNetworkHandler()
+					.sendPacket(new CreativeInventoryActionC2SPacket(36 + empty.slot(), requiredItemStack));
+
+			if (!empty.isMainHand()) {
+				InvUtils.swap(empty.slot(), returnHand.get());
+			}
+			usedSlot = empty.slot();
+			return action.get();
+		}
+		return false;
 	}
 
 	private Direction dir(BlockState state) {
