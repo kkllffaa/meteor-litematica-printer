@@ -1,42 +1,12 @@
 package com.kkllffaa.meteor_litematica_printer;
 
-import static meteordevelopment.meteorclient.MeteorClient.mc;
-import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
-
-import baritone.api.utils.BetterBlockPos;
-import baritone.api.utils.RayTraceUtils;
-import baritone.api.utils.Rotation;
-import baritone.api.utils.RotationUtils;
 import meteordevelopment.meteorclient.utils.player.Rotations;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
-import net.minecraft.block.AmethystClusterBlock;
-import net.minecraft.block.AnvilBlock;
-import net.minecraft.block.BellBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ButtonBlock;
-import net.minecraft.block.ChainBlock;
-import net.minecraft.block.EndRodBlock;
-import net.minecraft.block.GrindstoneBlock;
-import net.minecraft.block.HopperBlock;
-import net.minecraft.block.LightningRodBlock;
-import net.minecraft.block.ObserverBlock;
-import net.minecraft.block.PistonBlock;
-import net.minecraft.block.PointedDripstoneBlock;
-import net.minecraft.block.ScaffoldingBlock;
-import net.minecraft.block.ShulkerBoxBlock;
-import net.minecraft.block.SlabBlock;
-import net.minecraft.block.StainedGlassBlock;
-import net.minecraft.block.StairsBlock;
-import net.minecraft.block.TrapdoorBlock;
+import net.minecraft.block.*;
 import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.block.enums.SlabType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.state.property.Properties;
-import net.minecraft.state.property.Property;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -44,15 +14,23 @@ import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Direction.Axis;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.RaycastContext;
 import net.minecraft.world.RaycastContext.FluidHandling;
 import net.minecraft.world.RaycastContext.ShapeType;
 
+import static meteordevelopment.meteorclient.MeteorClient.mc;
+import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
+
+//import baritone.api.utils.BetterBlockPos;
+//import baritone.api.utils.RayTraceUtils;
+//import baritone.api.utils.Rotation;
+//import baritone.api.utils.RotationUtils;
+
 public class MyUtils {
-	
+
 	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
 		if (mc.player == null) return false;
 		if (!canPlace(blockPos)) return false;
@@ -76,8 +54,8 @@ public class MyUtils {
 		Direction s = direction;
 
         if (rotate) {
-        	BetterBlockPos placeAgainstPos = new BetterBlockPos(neighbour.getX(), neighbour.getY(), neighbour.getZ());
-			VoxelShape collisionShape = mc.world.getBlockState(placeAgainstPos).getCollisionShape(mc.world, placeAgainstPos);
+        	//BetterBlockPos placeAgainstPos = new BetterBlockPos(neighbour.getX(), neighbour.getY(), neighbour.getZ());
+			VoxelShape collisionShape = mc.world.getBlockState(neighbour).getCollisionShape(mc.world, neighbour);
             
 			if(collisionShape.isEmpty()) {
 				Rotations.rotate(Rotations.getYaw(hitPos), Rotations.getPitch(hitPos), 50, clientSide,
@@ -93,7 +71,7 @@ public class MyUtils {
             for (double x = 0.1; x < 0.9; x+=0.2)
             for (Vec3d placementMultiplier : aabbSideMultipliers(direction.getOpposite())) {
      			
-            	double placeX = placeAgainstPos.x + aabb.minX * x + aabb.maxX * (1 - x);
+            	double placeX = neighbour.getX() + aabb.minX * x + aabb.maxX * (1 - x);
 				if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null && direction != Direction.UP && direction != Direction.DOWN) && !mc.player.isCreative()) {
 					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
 						if (placementMultiplier.y <= 0.5) continue;
@@ -101,22 +79,22 @@ public class MyUtils {
 						if (placementMultiplier.y > 0.5) continue;
 					}
 				}
-				double placeY = placeAgainstPos.y + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
-				double placeZ = placeAgainstPos.z + aabb.minZ * z + aabb.maxZ * (1 - z);
+				double placeY = neighbour.getY() + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
+				double placeZ = neighbour.getZ() + aabb.minZ * z + aabb.maxZ * (1 - z);
                  
                 Vec3d testHitPos = new Vec3d(placeX, placeY, placeZ);
      	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
      						
-     			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, testHitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+     			Rotation rot = RotationStuff.calcRotationFromVec3d(playerHead, testHitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
      			Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
      			if (blockHorizontalOrientation != null
      					&& ( 	testHorizontalDirection.getAxis() != blockHorizontalOrientation.getAxis())) continue;
-     			HitResult res = RayTraceUtils.rayTraceTowards(mc.player, rot, range, false);
+     			HitResult res = RotationStuff.rayTraceTowards(mc.player, rot, range);
      			BlockHitResult blockHitRes = ((BlockHitResult) res);
      			if(
  					res == null ||
  					res.getType() != HitResult.Type.BLOCK || 
- 					!blockHitRes.getBlockPos().equals(placeAgainstPos) ||
+ 					!blockHitRes.getBlockPos().equals(neighbour) ||
  					blockHitRes.getSide() != direction
  				) continue;
      			
@@ -134,6 +112,7 @@ public class MyUtils {
 
 		return true;
 	}
+
 
 	private static void place(BlockHitResult blockHitResult, boolean swing) {
 		if (mc.player == null || mc.interactionManager == null || mc.getNetworkHandler() == null) return;
@@ -302,11 +281,11 @@ public class MyUtils {
 				
 					);
 	}
-	
+
 	public static Direction getVisiblePlaceSide(BlockPos placeAt, BlockState placeAtState, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, int range, Direction requiredDir) {
 		if (mc.world == null) return null;
 		for (Direction against : Direction.values()) {
-            BetterBlockPos placeAgainstPos = new BetterBlockPos(placeAt.getX(), placeAt.getY(), placeAt.getZ()).relative(against);
+            //BetterBlockPos placeAgainstPos = new BetterBlockPos(placeAt.getX(), placeAt.getY(), placeAt.getZ()).relative(against);
             // BlockState placeAgainstState = mc.world.getBlockState(placeAgainstPos);
 
             if(wantedAxies != null && against.getAxis() != wantedAxies || blockHalf != null && (against == Direction.UP && blockHalf == BlockHalf.BOTTOM || against == Direction.DOWN && blockHalf == BlockHalf.TOP))
@@ -324,16 +303,16 @@ public class MyUtils {
 
             if(!canPlaceAgainst(
         		placeAtState,
-				mc.world.getBlockState(placeAgainstPos),
+				mc.world.getBlockState(placeAt),
 				against
-			) || BlockUtils.isClickable(mc.world.getBlockState(placeAgainstPos).getBlock()))
+			) || BlockUtils.isClickable(mc.world.getBlockState(placeAt).getBlock()))
 			continue;
-            Box aabb = mc.world.getBlockState(placeAgainstPos).getCollisionShape(mc.world, placeAgainstPos).getBoundingBox();
+            Box aabb = mc.world.getBlockState(placeAt).getCollisionShape(mc.world, placeAt).getBoundingBox();
 
             for (double z = 0.1; z < 0.9; z+=0.2)
             for (double x = 0.1; x < 0.9; x+=0.2)
             for (Vec3d placementMultiplier : aabbSideMultipliers(against)) {
-            	 double placeX = placeAgainstPos.x + aabb.minX * x + aabb.maxX * (1 - x);
+            	 double placeX = placeAt.getX() + aabb.minX * x + aabb.maxX * (1 - x);
             	 if((slabType != null && slabType != SlabType.DOUBLE || blockHalf != null && against != Direction.DOWN && against != Direction.UP) && !mc.player.isCreative()) {
  					if (slabType == SlabType.BOTTOM || blockHalf == BlockHalf.BOTTOM) {
  						if (placementMultiplier.y <= 0.5) continue;
@@ -341,24 +320,24 @@ public class MyUtils {
  						if (placementMultiplier.y > 0.5) continue;
  					}
  				}
-                 double placeY = placeAgainstPos.y + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
-                 double placeZ = placeAgainstPos.z + aabb.minZ * z + aabb.maxZ * (1 - z);
+                 double placeY = placeAt.getY() + aabb.minY * placementMultiplier.y + aabb.maxY * (1 - placementMultiplier.y);
+                 double placeZ = placeAt.getZ() + aabb.minZ * z + aabb.maxZ * (1 - z);
                  
                 Vec3d hitPos = new Vec3d(placeX, placeY, placeZ);
      	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
-     			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+     			Rotation rot = RotationStuff.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
 
 				Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
 				if (placeAtState.getBlock() instanceof TrapdoorBlock && !(against != Direction.DOWN && against != Direction.UP) && !isPlayerOrientationDesired(placeAtState.getBlock(), blockHorizontalOrientation, testHorizontalDirection)
 						|| !(placeAtState.getBlock() instanceof TrapdoorBlock) && !isPlayerOrientationDesired(placeAtState.getBlock(), blockHorizontalOrientation, testHorizontalDirection)
 						) continue;
-     			HitResult res = RayTraceUtils.rayTraceTowards(mc.player, rot, range, false);
+     			HitResult res = RotationStuff.rayTraceTowards(mc.player, rot, range);
      			BlockHitResult blockHitRes = ((BlockHitResult) res);
 
      			if(
  					res == null 
  					|| res.getType() != HitResult.Type.BLOCK 
- 					|| !blockHitRes.getBlockPos().equals(placeAgainstPos) 
+ 					|| !blockHitRes.getBlockPos().equals(placeAt)
  					|| blockHitRes.getSide() != against.getOpposite()
  				) continue;
      			
@@ -403,7 +382,7 @@ public class MyUtils {
             
             Vec3d hitPos = new Vec3d(neighbor.getX(), neighbor.getY(), neighbor.getZ());
  	        Vec3d playerHead = new Vec3d(mc.player.getX(), mc.player.getEyeY(), mc.player.getZ());
- 			Rotation rot = RotationUtils.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
+ 			Rotation rot = RotationStuff.calcRotationFromVec3d(playerHead, hitPos, new Rotation(mc.player.getYaw(), mc.player.getPitch()));
 			
 			Direction testHorizontalDirection = getHorizontalDirectionFromYaw(rot.normalize().getYaw());
 
@@ -417,7 +396,9 @@ public class MyUtils {
         return null;
     }
 
+    /*
 	public static NbtCompound getNbtFromBlockState (ItemStack itemStack, BlockState state) {
+		//NbtCompound nbt = itemStack.getOrCreateNbt();
 		NbtCompound nbt = itemStack.getOrCreateNbt();
 		NbtCompound subNbt = new NbtCompound();
 		for (Property<?> property : state.getProperties()) {
@@ -427,7 +408,7 @@ public class MyUtils {
 		
 		return nbt;
 	}
-	
+	*/
 	private static Vec3d[] aabbSideMultipliers(Direction side) {
         switch (side) {
             case UP:

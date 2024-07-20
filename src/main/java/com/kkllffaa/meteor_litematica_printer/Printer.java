@@ -363,24 +363,14 @@ public class Printer extends Module {
 
 		int selectedSlot = mc.player.getInventory().selectedSlot;
 		boolean isCreative = mc.player.getAbilities().creativeMode;
-		ItemStack requiredItemStack = item.getDefaultStack();
-		NbtCompound nbt = MyUtils.getNbtFromBlockState(requiredItemStack, state);
-		requiredItemStack.setNbt(nbt);
 		FindItemResult result = InvUtils.find(item);
 
 
 		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in creative
+		// TODO: Fix check nbt
 
 		if (
-			!isCreative &&
-			mc.player.getMainHandStack().getItem() == item ||
-			isCreative &&
-			mc.player.getMainHandStack().getItem() == item &&
-			ItemStack
-			.canCombine(
-			mc.player.getMainHandStack()
-			,
-			requiredItemStack)
+			mc.player.getMainHandStack().getItem() == item
 		) {
 			if (action.get()) {
 				usedSlot = mc.player.getInventory().selectedSlot;
@@ -388,16 +378,8 @@ public class Printer extends Module {
 			} else return false;
 
 		} else if (
-			!isCreative &&
 			usedSlot != -1 &&
-			mc.player.getInventory().getStack(usedSlot).getItem() == item ||
-			isCreative &&
-			usedSlot != -1 &&
-			mc.player.getInventory().getStack(usedSlot).getItem() == item &&
-			ItemStack
-			.canCombine(
-			mc.player.getInventory().getStack(usedSlot),
-			requiredItemStack)
+			mc.player.getInventory().getStack(usedSlot).getItem() == item
 		) {
 			InvUtils.swap(usedSlot, returnHand.get());
 			if (action.get()) {
@@ -408,17 +390,7 @@ public class Printer extends Module {
 			}
 
 		} else if (
-			result.found() &&
-			!isCreative ||
-			result.found() &&
-			isCreative &&
-			result.found() &&
-			result.slot() != -1 &&
-			ItemStack
-			.canCombine(
-			requiredItemStack,
-			mc.player.getInventory().getStack(result.slot())
-			)
+			result.found()
 		) {
 			if (result.isHotbar()) {
 				InvUtils.swap(result.slot(), returnHand.get());
@@ -465,7 +437,7 @@ public class Printer extends Module {
             if (fir.found()) {
                 slot = fir.slot();
             }
-			mc.getNetworkHandler().sendPacket(new CreativeInventoryActionC2SPacket(36 + slot, requiredItemStack));
+			mc.getNetworkHandler().sendPacket(new CreativeInventoryActionC2SPacket(36 + slot, item.getDefaultStack()));
 			InvUtils.swap(slot, returnHand.get());
             return true;
 		} else return false;

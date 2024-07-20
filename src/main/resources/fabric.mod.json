@@ -20,7 +20,6 @@
   "depends": {
     "java": ">=17",
     "minecraft": ">=${mc_version}",
-    "meteor-client": "*",
-    "baritone-meteor": "*"
+    "meteor-client": "*"
   }
 }
