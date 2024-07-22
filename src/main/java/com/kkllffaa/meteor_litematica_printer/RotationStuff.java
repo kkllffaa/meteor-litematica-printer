@@ -1,5 +1,6 @@
 package com.kkllffaa.meteor_litematica_printer;
 
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.MathHelper;
@@ -39,7 +40,7 @@ public class RotationStuff {
 	}
 
 
-	public static HitResult rayTraceTowards(PlayerEntity entity, Rotation rotation, double blockReachDistance) {
+	public static HitResult rayTraceTowards(ClientPlayerEntity entity, Rotation rotation, double blockReachDistance) {
 		Vec3d start = entity.getCameraPosVec(1.0F);
 
 
