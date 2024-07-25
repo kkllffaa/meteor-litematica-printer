@@ -20,8 +20,8 @@ jobs:
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          automatic_release_tag: "mc_1.21_meteor_0.5.8_ver_1.3"
+          automatic_release_tag: "mc_1.20.6_meteor_0.5.7_ver_1.3"
           prerelease: false
-          title: "Version 1.3 for meteor 0.5.8 and Minecraft 1.21"
+          title: "Version 1.3 for meteor 0.5.7 and Minecraft 1.20.6"
           files: |
             ./build/libs/*.jar
