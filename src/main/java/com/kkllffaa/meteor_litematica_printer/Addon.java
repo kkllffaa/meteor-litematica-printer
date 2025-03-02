@@ -18,6 +18,7 @@ public class Addon extends MeteorAddon {
 
 		// Modules
 		Modules.get().add(new Printer());
+		Modules.get().add(new LitematicaBreaker());
 	}
 
     @Override
