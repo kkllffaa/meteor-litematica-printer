@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version '1.7-SNAPSHOT'
+    id 'fabric-loom' version '1.10-SNAPSHOT'
 }
 
 sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
@@ -12,7 +12,7 @@ repositories {
 	mavenCentral()
     maven { url = "https://maven.meteordev.org/releases" }
     maven { url = "https://maven.meteordev.org/snapshots" }
-	maven { url 'https://jitpack.io' }	
+	maven { url 'https://jitpack.io' }
 
     //maven { url = "https://masa.dy.fi/maven" }
 
@@ -31,9 +31,9 @@ dependencies {
 
     //litematica
     //modImplementation "curse.maven:litematica-${project.litematica_projectid}:${project.litematica_fileid}"
-	modImplementation 'com.github.sakura-ryoko:litematica:1.21-sakura.23'
+	modImplementation 'com.github.sakura-ryoko:litematica:1.21.4-0.21.3-sakura.2'
     //modImplementation "fi.dy.masa.malilib:malilib-fabric-${project.minecraft_version}:${project.malilib_version}"
-	modImplementation 'com.github.sakura-ryoko:malilib:1.21-sakura.8'
+	modImplementation 'com.github.sakura-ryoko:malilib:1.21.4-0.23.3-sakura.2'
 
 
 }
