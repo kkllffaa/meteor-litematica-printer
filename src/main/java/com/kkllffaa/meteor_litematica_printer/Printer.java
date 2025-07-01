@@ -155,6 +155,7 @@ public class Printer extends Module {
 			.build()
 	);
 
+	// TODO: Add blacklist option
     private final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
 			.name("whitelist")
 			.description("Blocks to place.")
@@ -367,6 +368,7 @@ public class Printer extends Module {
 
 		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in creative
 		// TODO: Fix check nbt
+		// TODO: Fix not acquiring blocks in creative mode
 
 		if (
 			mc.player.getMainHandStack().getItem() == item
