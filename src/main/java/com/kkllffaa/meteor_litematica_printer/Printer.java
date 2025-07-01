@@ -35,7 +35,6 @@ import net.minecraft.block.enums.SlabType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.Pair;
@@ -361,7 +360,7 @@ public class Printer extends Module {
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
 		if (mc.player == null) return false;
 
-		int selectedSlot = mc.player.getInventory().selectedSlot;
+		int selectedSlot = mc.player.getInventory().getSelectedSlot();
 		boolean isCreative = mc.player.getAbilities().creativeMode;
 		FindItemResult result = InvUtils.find(item);
 
@@ -373,7 +372,7 @@ public class Printer extends Module {
 			mc.player.getMainHandStack().getItem() == item
 		) {
 			if (action.get()) {
-				usedSlot = mc.player.getInventory().selectedSlot;
+				usedSlot = mc.player.getInventory().getSelectedSlot();
 				return true;
 			} else return false;
 
@@ -396,7 +395,7 @@ public class Printer extends Module {
 				InvUtils.swap(result.slot(), returnHand.get());
 
 				if (action.get()) {
-					usedSlot = mc.player.getInventory().selectedSlot;
+					usedSlot = mc.player.getInventory().getSelectedSlot();
 					return true;
 				} else {
 					InvUtils.swap(selectedSlot, returnHand.get());
@@ -411,7 +410,7 @@ public class Printer extends Module {
 					InvUtils.swap(empty.slot(), returnHand.get());
 
 					if (action.get()) {
-						usedSlot = mc.player.getInventory().selectedSlot;
+						usedSlot = mc.player.getInventory().getSelectedSlot();
 						return true;
 					} else {
 						InvUtils.swap(selectedSlot, returnHand.get());
