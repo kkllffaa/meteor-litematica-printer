@@ -44,3 +44,13 @@ processResources {
 tasks.withType(JavaCompile).configureEach {
     it.options.encoding("UTF-8")
 }
+tasks.register('printVersion') {
+    doLast {
+        println(project.version)
+    }
+}
+tasks.register('printMCVersion') {
+    doLast {
+        println(project.minecraft_version)
+    }
+}

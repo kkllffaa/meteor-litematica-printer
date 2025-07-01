@@ -7,21 +7,32 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
       - name: Setup JDK 21
         uses: actions/setup-java@v3.10.0
         with:
           java-version: 21
           distribution: adopt
+
       - name: Build
         run: |
           chmod +x ./gradlew
           ./gradlew build
-      - name: Create Dev Build release
+
+      - name: Get Versions
+        run: |
+          MC_VERSION=$(./gradlew -q printMCVersion)
+          PROJECT_VERSION=$(./gradlew -q printVersion)
+
+          echo "MC_VERSION=$MC_VERSION" >> $GITHUB_ENV
+          echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
+
+      - name: Create Build release
         uses: marvinpinto/action-automatic-releases@latest
         with:
           repo_token: '${{ secrets.GITHUB_TOKEN }}'
-          automatic_release_tag: "mc_1.21_meteor_0.5.8_ver_1.3"
+          automatic_release_tag: "${{ env.MC_VERSION }}-${{ env.PROJECT_VERSION }}"
           prerelease: false
-          title: "Version 1.3 for meteor 0.5.8 and Minecraft 1.21"
+          title: "Version ${{ env.PROJECT_VERSION }} for Minecraft ${{ env.MC_VERSION }}"
           files: |
             ./build/libs/*.jar
