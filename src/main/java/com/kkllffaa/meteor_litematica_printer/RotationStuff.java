@@ -50,6 +50,6 @@ public class RotationStuff {
 				direction.y * blockReachDistance,
 				direction.z * blockReachDistance
 		);
-		return entity.getWorld().raycast(new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
+		return entity.getEntityWorld().raycast(new RaycastContext(start, end, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.NONE, entity));
 	}
 }
