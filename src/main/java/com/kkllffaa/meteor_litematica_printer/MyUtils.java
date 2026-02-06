@@ -31,7 +31,7 @@ import static meteordevelopment.meteorclient.utils.world.BlockUtils.canPlace;
 
 public class MyUtils {
 
-	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range) {
+	public static boolean place(BlockPos blockPos, Direction direction, SlabType slabType, BlockHalf blockHalf, Direction blockHorizontalOrientation, Axis wantedAxies, boolean airPlace, boolean swingHand, boolean rotate, boolean clientSide, int range, Hand hand) {
 		if (mc.player == null) return false;
 		if (!canPlace(blockPos)) return false;
 
@@ -60,7 +60,7 @@ public class MyUtils {
 			if(collisionShape.isEmpty()) {
 				Rotations.rotate(Rotations.getYaw(hitPos), Rotations.getPitch(hitPos), 50, clientSide,
 	                    () ->
-	                    	place(new BlockHitResult(hitPos, s, neighbour, false), swingHand)
+	                    	place(new BlockHitResult(hitPos, s, neighbour, false), swingHand, hand)
 	                    );
 				return true;
 			}
@@ -101,29 +101,29 @@ public class MyUtils {
 
                 Rotations.rotate(Rotations.getYaw(testHitPos), Rotations.getPitch(testHitPos), 50, clientSide,
                     () ->
-                    	place(new BlockHitResult(testHitPos, s, neighbour, false), swingHand)
+                    	place(new BlockHitResult(testHitPos, s, neighbour, false), swingHand, hand)
                     );
 
      			return true;
             }
         } else {
-            place(new BlockHitResult(hitPos, s, neighbour, false), swingHand);
+            place(new BlockHitResult(hitPos, s, neighbour, false), swingHand, hand);
         }
 
 		return true;
 	}
     
-    private static void place(BlockHitResult blockHitResult, boolean swing) {
+    private static void place(BlockHitResult blockHitResult, boolean swing, Hand hand) {
         if (mc.player == null || mc.interactionManager == null || mc.getNetworkHandler() == null) return;
         boolean wasSneaking = mc.player.input.playerInput.sneak();
         boolean sneak = mc.player.input.playerInput.sneak();
         sneak = false;
 
-        ActionResult result = mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, blockHitResult);
+        ActionResult result = mc.interactionManager.interactBlock(mc.player, hand, blockHitResult);
 
         if (result == ActionResult.SUCCESS) {
-            if (swing) mc.player.swingHand(Hand.MAIN_HAND);
-            else mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            if (swing) mc.player.swingHand(hand);
+            else mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(hand));
         }
 
         sneak = wasSneaking;

@@ -43,6 +43,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Direction.Axis;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
+import net.minecraft.util.Hand;
 
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -188,6 +189,14 @@ public class Printer extends Module {
         .build()
     );
 
+	private final Setting<Boolean> useOffhand = sgGeneral.add(new BoolSetting.Builder()
+    	.name("use-offhand")
+    	.description("Automatically put block items in the offhand while printing.")
+    	.defaultValue(false)
+    	.build()
+	);
+
+
     private int timer;
     private int usedSlot = -1;
     private final List<BlockPos> toSort = new ArrayList<>();
@@ -302,9 +311,18 @@ public class Printer extends Module {
 					BlockState state = worldSchematic.getBlockState(pos);
 					Item item = state.getBlock().asItem();
 
-					if (dirtgrass.get() && item == Items.GRASS_BLOCK)
-						item = Items.DIRT;
-					if (switchItem(item, state, () -> place(state, pos))) {
+					if (dirtgrass.get() && item == Items.GRASS_BLOCK) item = Items.DIRT;
+
+					boolean placedBlock = false;
+
+					if (useOffhand.get()) {
+						// Offhand benutzen
+						placedBlock = switchItemOffhand(item, () -> place(state, pos));
+					} else {
+						// Normale Hand benutzen
+						placedBlock = switchItem(item, state, () -> place(state, pos));
+					}
+					if (placedBlock) {
 						timer = 0;
 						placed++;
 						if (renderBlocks.get()) {
@@ -355,7 +373,7 @@ public class Printer extends Module {
 							);
     	
 
-        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get());
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get(), useOffhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND);
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
@@ -443,7 +461,21 @@ public class Printer extends Module {
             return true;
 		} else return false;
 	}
+	private boolean switchItemOffhand(Item item, Supplier<Boolean> action) {
+		if (mc.player == null || !useOffhand.get()) return false; 
+		
+		if (mc.player.getOffHandStack().getItem() == item) {
+			return action.get();
+		}
 
+		FindItemResult result = InvUtils.find(item);
+		if (!result.found()) return false;
+
+		InvUtils.move().from(result.slot()).toOffhand();
+
+		return action.get();
+	}
+	
 	private Direction dir(BlockState state) {
 		if (state.contains(Properties.FACING)) return state.get(Properties.FACING);
 		else if (state.contains(Properties.AXIS)) return Direction.from(state.get(Properties.AXIS), Direction.AxisDirection.POSITIVE);
