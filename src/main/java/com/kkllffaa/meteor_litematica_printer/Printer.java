@@ -28,22 +28,22 @@ import meteordevelopment.meteorclient.utils.render.color.SettingColor;
 import meteordevelopment.meteorclient.utils.world.BlockIterator;
 import meteordevelopment.meteorclient.utils.world.BlockUtils;
 import meteordevelopment.orbit.EventHandler;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.enums.BlockHalf;
-import net.minecraft.block.enums.SlabType;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.network.packet.c2s.play.CreativeInventoryActionC2SPacket;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.Pair;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Direction.Axis;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
-import net.minecraft.util.Hand;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Direction.Axis;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.protocol.game.ServerboundSetCreativeModeSlotPacket;
+import net.minecraft.util.Tuple;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Half;
+import net.minecraft.world.level.block.state.properties.SlabType;
+import net.minecraft.world.phys.Vec3;
 
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -200,7 +200,7 @@ public class Printer extends Module {
     private int timer;
     private int usedSlot = -1;
     private final List<BlockPos> toSort = new ArrayList<>();
-    private final List<Pair<Integer, BlockPos>> placed_fade = new ArrayList<>();
+    private final List<Tuple<Integer, BlockPos>> placed_fade = new ArrayList<>();
 
 
 	// TODO: Add an option for smooth rotation. Make it look legit.
@@ -223,13 +223,13 @@ public class Printer extends Module {
 
 	@EventHandler
 	private void onTick(TickEvent.Post event) {
-		if (mc.player == null || mc.world == null) {
+		if (mc.player == null || mc.level == null) {
 			placed_fade.clear();
 			return;
 		}
 
-		placed_fade.forEach(s -> s.setLeft(s.getLeft() - 1));
-		placed_fade.removeIf(s -> s.getLeft() <= 0);
+		placed_fade.forEach(s -> s.setA(s.getA() - 1));
+		placed_fade.removeIf(s -> s.getA() <= 0);
 
 		WorldSchematic worldSchematic = SchematicWorldHandler.getSchematicWorld();
 		if (worldSchematic == null) {
@@ -246,21 +246,22 @@ public class Printer extends Module {
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				if (
-						mc.player.getBlockPos().isWithinDistance(pos, printing_range.get())
-						&& blockState.isReplaceable()
-						&& !required.isLiquid()
+						mc.player.blockPosition().closerThan(pos, printing_range.get())
+						&& blockState.canBeReplaced()
+						// && !required.liquid()
+						&& !required.getFluidState().isEmpty()
 						&& !required.isAir()
 						&& blockState.getBlock() != required.getBlock()
 						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos)
-						&& !mc.player.getBoundingBox().intersects(Vec3d.of(pos), Vec3d.of(pos).add(1, 1, 1))
-						&& required.canPlaceAt(mc.world, pos)
+						&& !mc.player.getBoundingBox().intersects(Vec3.atLowerCornerOf(pos), Vec3.atLowerCornerOf(pos).add(1, 1, 1))
+						&& required.canSurvive(mc.level, pos)
 					) {
 					boolean isBlockInLineOfSight = MyUtils.isBlockInLineOfSight(pos, required);
-			    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
-			    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
-			    	Direction wantedHorizontalOrientation = advanced.get() && required.contains(Properties.HORIZONTAL_FACING) ? required.get(Properties.HORIZONTAL_FACING) : null;
-			    	Axis wantedAxies = advanced.get() && required.contains(Properties.AXIS) ? required.get(Properties.AXIS) : null;
-			    	Direction wantedHopperOrientation = advanced.get() && required.contains(Properties.HOPPER_FACING) ? required.get(Properties.HOPPER_FACING) : null;
+			    	SlabType wantedSlabType = advanced.get() && required.hasProperty(BlockStateProperties.SLAB_TYPE) ? required.getValue(BlockStateProperties.SLAB_TYPE) : null;
+			    	Half wantedBlockHalf = advanced.get() && required.hasProperty(BlockStateProperties.HALF) ? required.getValue(BlockStateProperties.HALF) : null;
+			    	Direction wantedHorizontalOrientation = advanced.get() && required.hasProperty(BlockStateProperties.HORIZONTAL_FACING) ? required.getValue(BlockStateProperties.HORIZONTAL_FACING) : null;
+			    	Axis wantedAxies = advanced.get() && required.hasProperty(BlockStateProperties.AXIS) ? required.getValue(BlockStateProperties.AXIS) : null;
+			    	Direction wantedHopperOrientation = advanced.get() && required.hasProperty(BlockStateProperties.FACING_HOPPER) ? required.getValue(BlockStateProperties.FACING_HOPPER) : null;
 
 					if(
 						airPlace.get()
@@ -326,7 +327,7 @@ public class Printer extends Module {
 						timer = 0;
 						placed++;
 						if (renderBlocks.get()) {
-							placed_fade.add(new Pair<>(fadeTime.get(), new BlockPos(pos)));
+							placed_fade.add(new Tuple<>(fadeTime.get(), new BlockPos(pos)));
 						}
 						if (placed >= bpt.get()) {
 							return;
@@ -341,15 +342,15 @@ public class Printer extends Module {
 
 	public boolean place(BlockState required, BlockPos pos) {
 
-		if (mc.player == null || mc.world == null) return false;
-		if (!mc.world.getBlockState(pos).isReplaceable()) return false;
+		if (mc.player == null || mc.level == null) return false;
+		if (!mc.level.getBlockState(pos).canBeReplaced()) return false;
 
 		Direction wantedSide = advanced.get() ? dir(required) : null;
-    	SlabType wantedSlabType = advanced.get() && required.contains(Properties.SLAB_TYPE) ? required.get(Properties.SLAB_TYPE) : null;
-    	BlockHalf wantedBlockHalf = advanced.get() && required.contains(Properties.BLOCK_HALF) ? required.get(Properties.BLOCK_HALF) : null;
-    	Direction wantedHorizontalOrientation = advanced.get() && required.contains(Properties.HORIZONTAL_FACING) ? required.get(Properties.HORIZONTAL_FACING) : null;
-    	Axis wantedAxies = advanced.get() && required.contains(Properties.AXIS) ? required.get(Properties.AXIS) : null;
-    	Direction wantedHopperOrientation = advanced.get() && required.contains(Properties.HOPPER_FACING) ? required.get(Properties.HOPPER_FACING) : null;
+    	SlabType wantedSlabType = advanced.get() && required.hasProperty(BlockStateProperties.SLAB_TYPE) ? required.getValue(BlockStateProperties.SLAB_TYPE) : null;
+    	Half wantedBlockHalf = advanced.get() && required.hasProperty(BlockStateProperties.HALF) ? required.getValue(BlockStateProperties.HALF) : null;
+    	Direction wantedHorizontalOrientation = advanced.get() && required.hasProperty(BlockStateProperties.HORIZONTAL_FACING) ? required.getValue(BlockStateProperties.HORIZONTAL_FACING) : null;
+    	Axis wantedAxies = advanced.get() && required.hasProperty(BlockStateProperties.AXIS) ? required.getValue(BlockStateProperties.AXIS) : null;
+    	Direction wantedHopperOrientation = advanced.get() && required.hasProperty(BlockStateProperties.FACING_HOPPER) ? required.getValue(BlockStateProperties.FACING_HOPPER) : null;
     	//Direction wantedFace = advanced.get() && required.contains(Properties.FACING) ? required.get(Properties.FACING) : null;
     	
     	Direction placeSide = placeThroughWall.get() ?
@@ -373,14 +374,14 @@ public class Printer extends Module {
 							);
     	
 
-        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get(), useOffhand.get() ? Hand.OFF_HAND : Hand.MAIN_HAND);
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get(), useOffhand.get() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
 		if (mc.player == null) return false;
 
 		int selectedSlot = mc.player.getInventory().getSelectedSlot();
-		boolean isCreative = mc.player.getAbilities().creativeMode;
+		boolean isCreative = mc.player.isCreative();
 		FindItemResult result = InvUtils.find(item);
 
 
@@ -389,7 +390,7 @@ public class Printer extends Module {
 		// TODO: Fix not acquiring blocks in creative mode
 
 		if (
-			mc.player.getMainHandStack().getItem() == item
+			mc.player.getMainHandItem().getItem() == item
 		) {
 			if (action.get()) {
 				usedSlot = mc.player.getInventory().getSelectedSlot();
@@ -398,7 +399,7 @@ public class Printer extends Module {
 
 		} else if (
 			usedSlot != -1 &&
-			mc.player.getInventory().getStack(usedSlot).getItem() == item
+			mc.player.getInventory().getItem(usedSlot).getItem() == item
 		) {
 			InvUtils.swap(usedSlot, returnHand.get());
 			if (action.get()) {
@@ -456,7 +457,7 @@ public class Printer extends Module {
             if (fir.found()) {
                 slot = fir.slot();
             }
-			mc.getNetworkHandler().sendPacket(new CreativeInventoryActionC2SPacket(36 + slot, item.getDefaultStack()));
+			mc.getConnection().send(new ServerboundSetCreativeModeSlotPacket(36 + slot, item.getDefaultInstance()));
 			InvUtils.swap(slot, returnHand.get());
             return true;
 		} else return false;
@@ -464,7 +465,7 @@ public class Printer extends Module {
 	private boolean switchItemOffhand(Item item, Supplier<Boolean> action) {
 		if (mc.player == null || !useOffhand.get()) return false; 
 		
-		if (mc.player.getOffHandStack().getItem() == item) {
+		if (mc.player.getOffhandItem().getItem() == item) {
 			return action.get();
 		}
 
@@ -477,17 +478,17 @@ public class Printer extends Module {
 	}
 	
 	private Direction dir(BlockState state) {
-		if (state.contains(Properties.FACING)) return state.get(Properties.FACING);
-		else if (state.contains(Properties.AXIS)) return Direction.from(state.get(Properties.AXIS), Direction.AxisDirection.POSITIVE);
-		else if (state.contains(Properties.HORIZONTAL_AXIS)) return Direction.from(state.get(Properties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
+		if (state.hasProperty(BlockStateProperties.FACING)) return state.getValue(BlockStateProperties.FACING);
+		else if (state.hasProperty(BlockStateProperties.AXIS)) return Direction.fromAxisAndDirection(state.getValue(BlockStateProperties.AXIS), Direction.AxisDirection.POSITIVE);
+		else if (state.hasProperty(BlockStateProperties.HORIZONTAL_AXIS)) return Direction.fromAxisAndDirection(state.getValue(BlockStateProperties.HORIZONTAL_AXIS), Direction.AxisDirection.POSITIVE);
 		else return Direction.UP;
 	}
 
 	@EventHandler
 	private void onRender(Render3DEvent event) {
 		placed_fade.forEach(s -> {
-			Color a = new Color(colour.get().r, colour.get().g, colour.get().b, (int) (((float)s.getLeft() / (float) fadeTime.get()) * colour.get().a));
-			event.renderer.box(s.getRight(), a, null, ShapeMode.Sides, 0);
+			Color a = new Color(colour.get().r, colour.get().g, colour.get().b, (int) (((float)s.getA() / (float) fadeTime.get()) * colour.get().a));
+			event.renderer.box(s.getB(), a, null, ShapeMode.Sides, 0);
 		});
 	}
 
