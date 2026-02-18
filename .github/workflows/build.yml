@@ -1,6 +1,10 @@
 name: Release Build
 
 on: workflow_dispatch
+
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -21,7 +25,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew build
 
-      - name: Get Versions
+      - name: Get Versions and Changelog
         run: |
           MC_VERSION=$(./gradlew -q printMCVersion)
           PROJECT_VERSION=$(./gradlew -q printVersion)
@@ -29,11 +33,14 @@ jobs:
           echo "MC_VERSION=$MC_VERSION" >> $GITHUB_ENV
           echo "PROJECT_VERSION=$PROJECT_VERSION" >> $GITHUB_ENV
 
+          chmod +x ./changelog.sh
+          ./changelog.sh > changelog.txt
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
           name: "Version ${{ env.PROJECT_VERSION }} for Minecraft ${{ env.MC_VERSION }}"
           tag_name: "${{ env.PROJECT_VERSION }}-${{ env.MC_VERSION }}"
-          generate_release_notes: true
-          make_latest: false
-          files: build/libs/*.jar            
+          body_path: changelog.txt
+          files: build/libs/*.jar
+          make_latest: true
