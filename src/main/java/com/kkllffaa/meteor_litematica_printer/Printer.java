@@ -249,7 +249,7 @@ public class Printer extends Module {
 						mc.player.blockPosition().closerThan(pos, printing_range.get())
 						&& blockState.canBeReplaced()
 						// && !required.liquid()
-						&& !required.getFluidState().isEmpty()
+						&& required.getFluidState().isEmpty()
 						&& !required.isAir()
 						&& blockState.getBlock() != required.getBlock()
 						&& DataManager.getRenderLayerRange().isPositionWithinRange(pos)
