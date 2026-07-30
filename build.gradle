@@ -1,5 +1,5 @@
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
 }
 
 
@@ -11,7 +11,7 @@ base {
 }
 
 java {
-    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_25
 }
 
 repositories {
@@ -25,15 +25,16 @@ repositories {
 dependencies {
     // Minecraft
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings loom.officialMojangMappings()
-    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
     // Meteor
-    modImplementation "meteordevelopment:meteor-client:${project.minecraft_version}-SNAPSHOT"
+    implementation "meteordevelopment:meteor-client:${project.minecraft_version}-SNAPSHOT"
 
     // Litematica TODO: make it not error on compile?
-    modImplementation "com.github.sakura-ryoko:litematica:${project.minecraft_version}-${project.litematica_version}"
-    modImplementation "com.github.sakura-ryoko:malilib:${project.minecraft_version}-${project.malilib_version}"
+    implementation("com.github.sakura-ryoko:litematica:${project.minecraft_version}-${project.litematica_version}") {
+        exclude group: "fi.dy.masa.malilib"
+    }
+    implementation "com.github.sakura-ryoko:malilib:${project.minecraft_version}-${project.malilib_version}"
 }
 
 processResources {

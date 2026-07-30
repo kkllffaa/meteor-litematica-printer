@@ -15,6 +15,7 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.ColorSetting;
+import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -47,10 +48,10 @@ import net.minecraft.world.phys.Vec3;
 
 public class Printer extends Module {
 	private final SettingGroup sgGeneral = settings.getDefaultGroup();
-	private final SettingGroup sgWhitelist = settings.createGroup("Whitelist");
+	private final SettingGroup sgWorkMode = settings.createGroup("Work Mode");
     private final SettingGroup sgRendering = settings.createGroup("Rendering");
 
-	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
+	private final Setting<Double> printing_range = sgGeneral.add(new DoubleSetting.Builder()
 			.name("printing-range")
 			.description("The block place range.")
 			.defaultValue(2)
@@ -59,7 +60,7 @@ public class Printer extends Module {
 			.build()
 	);
 
-	private final Setting<Integer> printing_delay = sgGeneral.add(new IntSetting.Builder()
+	private final Setting<Double> printing_delay = sgGeneral.add(new DoubleSetting.Builder()
 			.name("printing-delay")
 			.description("Delay between printing blocks in ticks.")
 			.defaultValue(2)
@@ -149,18 +150,17 @@ public class Printer extends Module {
 			.build()
 	);
 
-    private final Setting<Boolean> whitelistenabled = sgWhitelist.add(new BoolSetting.Builder()
-			.name("whitelist-enabled")
-			.description("Only place selected blocks.")
-			.defaultValue(false)
+    private final Setting<FilterMode> listMode = sgWorkMode.add(new EnumSetting.Builder<FilterMode>()
+			.name("list-mode")
+			.description("Block list mode.")
+			.defaultValue(FilterMode.NONE)
 			.build()
 	);
 
-	// TODO: Add blacklist option
-    private final Setting<List<Block>> whitelist = sgWhitelist.add(new BlockListSetting.Builder()
-			.name("whitelist")
-			.description("Blocks to place.")
-			.visible(whitelistenabled::get)
+    private final Setting<List<Block>> filterBlocks = sgWorkMode.add(new BlockListSetting.Builder()
+			.name("filter-blocks")
+			.description("Blocks to whitelist or blacklist.")
+			.visible(() -> listMode.get() != FilterMode.NONE)
 			.build()
 	);
 
@@ -208,7 +208,7 @@ public class Printer extends Module {
 	// https://github.com/CCBlueX/LiquidBounce/blob/nextgen/src/main/kotlin/net/ccbluex/liquidbounce/utils/aiming/RotationsUtil.kt#L257
 
 	public Printer() {
-		super(Addon.CATEGORY, "litematica-printer", "Automatically prints open schematics");
+		super(Addon.CATEGORY, "printer", "Automatically prints open schematics");
 	}
 
     @Override
@@ -241,12 +241,12 @@ public class Printer extends Module {
 		toSort.clear();
 
 
-		if (timer >= printing_delay.get()) {
-			BlockIterator.register(printing_range.get() + 1, printing_range.get() + 1, (pos, blockState) -> {
+		if (timer >= printing_delay.get().intValue()) {
+			BlockIterator.register(printing_range.get().intValue() + 1, printing_range.get().intValue() + 1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				if (
-						mc.player.blockPosition().closerThan(pos, printing_range.get())
+						mc.player.blockPosition().closerThan(pos, printing_range.get().intValue())
 						&& blockState.canBeReplaced()
 						// && !required.liquid()
 						&& required.getFluidState().isEmpty()
@@ -276,7 +276,7 @@ public class Printer extends Module {
 							wantedBlockHalf,
 							wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
 							wantedAxies,
-							printing_range.get(),
+							printing_range.get().intValue(),
 							advanced.get() ? dir(required) : null
 						) != null
 						|| airPlace.get()
@@ -286,7 +286,10 @@ public class Printer extends Module {
 						&& placeThroughWall.get()
 						&& BlockUtils.getPlaceSide(pos) != null
 					) {
-						if (!whitelistenabled.get() || whitelist.get().contains(required.getBlock())) {
+						FilterMode fm = listMode.get();
+						if (fm == FilterMode.NONE ||
+							(fm == FilterMode.WHITELIST && filterBlocks.get().contains(required.getBlock())) ||
+							(fm == FilterMode.BLACKLIST && !filterBlocks.get().contains(required.getBlock()))) {
 							toSort.add(new BlockPos(pos));
 						}
 					}
@@ -369,12 +372,12 @@ public class Printer extends Module {
     								wantedBlockHalf,
     								wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
     								wantedAxies,
-    								printing_range.get(),
+							printing_range.get().intValue(),
     								wantedSide
 							);
     	
 
-        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get(), useOffhand.get() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get().intValue(), useOffhand.get() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
@@ -384,82 +387,50 @@ public class Printer extends Module {
 		boolean isCreative = mc.player.isCreative();
 		FindItemResult result = InvUtils.find(item);
 
-
-		// TODO: Check if ItemStack nbt has BlockStateTag == BlockState required when in creative
-		// TODO: Fix check nbt
-		// TODO: Fix not acquiring blocks in creative mode
-
-		if (
-			mc.player.getMainHandItem().getItem() == item
-		) {
+		if (mc.player.getMainHandItem().getItem() == item) {
 			if (action.get()) {
 				usedSlot = mc.player.getInventory().getSelectedSlot();
 				return true;
 			} else return false;
 
-		} else if (
-			usedSlot != -1 &&
-			mc.player.getInventory().getItem(usedSlot).getItem() == item
-		) {
+		} else if (usedSlot != -1 && mc.player.getInventory().getItem(usedSlot).getItem() == item) {
 			InvUtils.swap(usedSlot, returnHand.get());
-			if (action.get()) {
-				return true;
-			} else {
-				InvUtils.swap(selectedSlot, returnHand.get());
-				return false;
-			}
+			if (action.get()) { return true; }
+			else { InvUtils.swap(selectedSlot, returnHand.get()); return false; }
 
-		} else if (
-			result.found()
-		) {
+		} else if (isCreative) {
+			// Check if item is already in any hotbar slot
+			FindItemResult hotbarResult = InvUtils.find(stack -> stack.getItem() == item, 0, 8);
+			if (hotbarResult.found()) {
+				InvUtils.swap(hotbarResult.slot(), returnHand.get());
+				usedSlot = mc.player.getInventory().getSelectedSlot();
+				return action.get();
+			}
+			// Set item directly in selected hotbar slot via creative packet
+			int slot = mc.player.getInventory().getSelectedSlot();
+			mc.getConnection().send(new ServerboundSetCreativeModeSlotPacket((short)(36 + slot), new ItemStack(item)));
+			return action.get();
+
+		} else if (result.found()) {
 			if (result.isHotbar()) {
 				InvUtils.swap(result.slot(), returnHand.get());
-
-				if (action.get()) {
-					usedSlot = mc.player.getInventory().getSelectedSlot();
-					return true;
-				} else {
-					InvUtils.swap(selectedSlot, returnHand.get());
-					return false;
-				}
+				if (action.get()) { usedSlot = mc.player.getInventory().getSelectedSlot(); return true; }
+				else { InvUtils.swap(selectedSlot, returnHand.get()); return false; }
 
 			} else if (result.isMain()) {
 				FindItemResult empty = InvUtils.findEmpty();
-
 				if (empty.found() && empty.isHotbar()) {
 					InvUtils.move().from(result.slot()).toHotbar(empty.slot());
 					InvUtils.swap(empty.slot(), returnHand.get());
-
-					if (action.get()) {
-						usedSlot = mc.player.getInventory().getSelectedSlot();
-						return true;
-					} else {
-						InvUtils.swap(selectedSlot, returnHand.get());
-						return false;
-					}
-
+					if (action.get()) { usedSlot = mc.player.getInventory().getSelectedSlot(); return true; }
+					else { InvUtils.swap(selectedSlot, returnHand.get()); return false; }
 				} else if (usedSlot != -1) {
 					InvUtils.move().from(result.slot()).toHotbar(usedSlot);
 					InvUtils.swap(usedSlot, returnHand.get());
-
-					if (action.get()) {
-						return true;
-					} else {
-						InvUtils.swap(selectedSlot, returnHand.get());
-						return false;
-					}
-
+					if (action.get()) { return true; }
+					else { InvUtils.swap(selectedSlot, returnHand.get()); return false; }
 				} else return false;
 			} else return false;
-		} else if (isCreative) {
-			int slot = 0;
-            FindItemResult fir = InvUtils.find(ItemStack::isEmpty, 0, 8);
-            if (fir.found()) {
-                slot = fir.slot();
-            }
-			mc.getConnection().send(new ServerboundSetCreativeModeSlotPacket(36 + slot, item.getDefaultInstance()));
-			InvUtils.swap(slot, returnHand.get());
-            return true;
 		} else return false;
 	}
 	private boolean switchItemOffhand(Item item, Supplier<Boolean> action) {
@@ -469,12 +440,18 @@ public class Printer extends Module {
 			return action.get();
 		}
 
-		FindItemResult result = InvUtils.find(item);
-		if (!result.found()) return false;
+		FindItemResult result = InvUtils.find(stack -> stack.getItem() == item, 0, 8);
+		if (result.found()) {
+			InvUtils.move().from(result.slot()).toOffhand();
+			return action.get();
+		}
 
-		InvUtils.move().from(result.slot()).toOffhand();
+		if (mc.player.isCreative()) {
+			mc.getConnection().send(new ServerboundSetCreativeModeSlotPacket((short)(mc.player.getInventory().getSelectedSlot() + 36), new ItemStack(item)));
+			return false;
+		}
 
-		return action.get();
+		return false;
 	}
 	
 	private Direction dir(BlockState state) {
@@ -522,4 +499,6 @@ public class Printer extends Module {
 			this.algorithm = algorithm;
 		}
 	}
+
+	public enum FilterMode { NONE, WHITELIST, BLACKLIST }
 }
