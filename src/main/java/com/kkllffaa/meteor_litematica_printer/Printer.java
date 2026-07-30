@@ -15,7 +15,6 @@ import meteordevelopment.meteorclient.renderer.ShapeMode;
 import meteordevelopment.meteorclient.settings.BlockListSetting;
 import meteordevelopment.meteorclient.settings.BoolSetting;
 import meteordevelopment.meteorclient.settings.ColorSetting;
-import meteordevelopment.meteorclient.settings.DoubleSetting;
 import meteordevelopment.meteorclient.settings.EnumSetting;
 import meteordevelopment.meteorclient.settings.IntSetting;
 import meteordevelopment.meteorclient.settings.Setting;
@@ -51,7 +50,7 @@ public class Printer extends Module {
 	private final SettingGroup sgWorkMode = settings.createGroup("Work Mode");
     private final SettingGroup sgRendering = settings.createGroup("Rendering");
 
-	private final Setting<Double> printing_range = sgGeneral.add(new DoubleSetting.Builder()
+	private final Setting<Integer> printing_range = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-range")
 			.description("The block place range.")
 			.defaultValue(2)
@@ -60,7 +59,7 @@ public class Printer extends Module {
 			.build()
 	);
 
-	private final Setting<Double> printing_delay = sgGeneral.add(new DoubleSetting.Builder()
+	private final Setting<Integer> printing_delay = sgGeneral.add(new IntSetting.Builder()
 			.name("printing-delay")
 			.description("Delay between printing blocks in ticks.")
 			.defaultValue(2)
@@ -241,12 +240,12 @@ public class Printer extends Module {
 		toSort.clear();
 
 
-		if (timer >= printing_delay.get().intValue()) {
-			BlockIterator.register(printing_range.get().intValue() + 1, printing_range.get().intValue() + 1, (pos, blockState) -> {
+		if (timer >= printing_delay.get()) {
+			BlockIterator.register(printing_range.get() + 1, printing_range.get() + 1, (pos, blockState) -> {
 				BlockState required = worldSchematic.getBlockState(pos);
 
 				if (
-						mc.player.blockPosition().closerThan(pos, printing_range.get().intValue())
+						mc.player.blockPosition().closerThan(pos, printing_range.get())
 						&& blockState.canBeReplaced()
 						// && !required.liquid()
 						&& required.getFluidState().isEmpty()
@@ -276,7 +275,7 @@ public class Printer extends Module {
 							wantedBlockHalf,
 							wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
 							wantedAxies,
-							printing_range.get().intValue(),
+							printing_range.get(),
 							advanced.get() ? dir(required) : null
 						) != null
 						|| airPlace.get()
@@ -372,12 +371,12 @@ public class Printer extends Module {
     								wantedBlockHalf,
     								wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation,
     								wantedAxies,
-							printing_range.get().intValue(),
+							printing_range.get(),
     								wantedSide
 							);
     	
 
-        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get().intValue(), useOffhand.get() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
+        return MyUtils.place(pos, placeSide, wantedSlabType, wantedBlockHalf, wantedHorizontalOrientation != null ? wantedHorizontalOrientation : wantedHopperOrientation, wantedAxies, airPlace.get(), swing.get(), rotate.get(), clientSide.get(), printing_range.get(), useOffhand.get() ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND);
 	}
 
 	private boolean switchItem(Item item, BlockState state, Supplier<Boolean> action) {
