@@ -20,7 +20,7 @@
       {
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
-            jdk21
+            jdk25
           ];
         };
       }
