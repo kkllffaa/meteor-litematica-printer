@@ -1,7 +1,7 @@
 #!/bin/sh
 PREVIOUS_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
 
-echo "### Changes in this Release"
+echo "### Commits"
 echo ""
 
 if [ -n "$PREVIOUS_TAG" ]; then
