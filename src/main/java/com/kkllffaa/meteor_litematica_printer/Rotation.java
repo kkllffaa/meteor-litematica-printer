@@ -1,6 +1,7 @@
 package com.kkllffaa.meteor_litematica_printer;
 
 public class Rotation {
+
 	private final float yaw;
 	private final float pitch;
 
@@ -23,36 +24,31 @@ public class Rotation {
 	public Rotation add(Rotation other) {
 		return new Rotation(
 				this.yaw + other.yaw,
-				this.pitch + other.pitch
-		);
+				this.pitch + other.pitch);
 	}
 
 	public Rotation subtract(Rotation other) {
 		return new Rotation(
 				this.yaw - other.yaw,
-				this.pitch - other.pitch
-		);
+				this.pitch - other.pitch);
 	}
 
 	public Rotation clamp() {
 		return new Rotation(
 				this.yaw,
-				clampPitch(this.pitch)
-		);
+				clampPitch(this.pitch));
 	}
 
 	public Rotation normalize() {
 		return new Rotation(
 				normalizeYaw(this.yaw),
-				this.pitch
-		);
+				this.pitch);
 	}
 
 	public Rotation normalizeAndClamp() {
 		return new Rotation(
 				normalizeYaw(this.yaw),
-				clampPitch(this.pitch)
-		);
+				clampPitch(this.pitch));
 	}
 
 	public Rotation withPitch(float pitch) {

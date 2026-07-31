@@ -1,6 +1,6 @@
 plugins {
-    id "net.fabricmc.fabric-loom" version "${loom_version}"
-    id "com.diffplug.spotless" version "6.25.0"
+	id "net.fabricmc.fabric-loom" version "${loom_version}"
+	id "com.diffplug.spotless" version "6.25.0"
 }
 
 
@@ -8,40 +8,40 @@ version = project.mod_version
 group = project.maven_group
 
 base {
-    archivesName = project.archives_base_name
+	archivesName = project.archives_base_name
 }
 
 java {
-    sourceCompatibility = targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = targetCompatibility = JavaVersion.VERSION_25
 }
 
 repositories {
-    mavenCentral()
-    maven { url = "https://maven.meteordev.org/releases" }
-    maven { url = "https://maven.meteordev.org/snapshots" }
-    maven { url = 'https://jitpack.io' }
-    maven { url = "https://maven.fallenbreath.me/releases" }
+	mavenCentral()
+	maven { url = "https://maven.meteordev.org/releases" }
+	maven { url = "https://maven.meteordev.org/snapshots" }
+	maven { url = "https://jitpack.io" }
+	maven { url = "https://maven.fallenbreath.me/releases" }
 }
 
 dependencies {
-    // Minecraft
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	// Minecraft
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Meteor
-    implementation "meteordevelopment:meteor-client:${project.minecraft_version}-SNAPSHOT"
+	// Meteor
+	implementation "meteordevelopment:meteor-client:${project.minecraft_version}-SNAPSHOT"
 
-    // Litematica TODO: make it not error on compile?
-    implementation("com.github.sakura-ryoko:litematica:${project.minecraft_version}-${project.litematica_version}") {
-        exclude group: "fi.dy.masa.malilib"
-    }
-    implementation "com.github.sakura-ryoko:malilib:${project.minecraft_version}-${project.malilib_version}"
+	// Litematica TODO: make it not error on compile?
+	implementation("com.github.sakura-ryoko:litematica:${project.minecraft_version}-${project.litematica_version}") {
+		exclude group: "fi.dy.masa.malilib"
+	}
+	implementation "com.github.sakura-ryoko:malilib:${project.minecraft_version}-${project.malilib_version}"
 }
 
 processResources {
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version, "mc_version": project.minecraft_version
-    }
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version, "mc_version": project.minecraft_version
+	}
 }
 
 spotless {
@@ -57,15 +57,15 @@ spotless {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    it.options.encoding = "UTF-8"
+	it.options.encoding = "UTF-8"
 }
-tasks.register('printVersion') {
-    doLast {
-        println(project.version)
-    }
+tasks.register("printVersion") {
+	doLast {
+		println(project.version)
+	}
 }
-tasks.register('printMCVersion') {
-    doLast {
-        println(project.minecraft_version)
-    }
+tasks.register("printMCVersion") {
+	doLast {
+		println(project.minecraft_version)
+	}
 }
