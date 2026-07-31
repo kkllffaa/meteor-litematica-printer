@@ -1,5 +1,6 @@
 plugins {
     id "net.fabricmc.fabric-loom" version "${loom_version}"
+    id "com.diffplug.spotless" version "6.25.0"
 }
 
 
@@ -40,6 +41,18 @@ dependencies {
 processResources {
     filesMatching("fabric.mod.json") {
         expand "version": project.version, "mc_version": project.minecraft_version
+    }
+}
+
+spotless {
+    java {
+        target "src/**/*.java"
+
+        eclipse().configFile("eclipse-formatter.xml")
+
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
 

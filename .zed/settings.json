@@ -1,0 +1,23 @@
+{
+  "languages": {
+    "Java": {
+      "format_on_save": "on",
+      "formatter": "language_server",
+    },
+  },
+  "lsp": {
+    "jdtls": {
+      "initialization_options": {
+        "settings": {
+          "java": {
+            "format": {
+              "settings": {
+                "url": "eclipse-formatter.xml",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}

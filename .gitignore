@@ -19,10 +19,14 @@ classes/
 # vscode
 
 .settings/
-.vscode/
+.vscode/*
 bin/
 .classpath
 .project
+
+# zed
+
+.zed/*
 
 # macos
 
@@ -31,3 +35,8 @@ bin/
 # fabric
 
 run/
+
+# allow settings for code style
+
+!.vscode/settings.json
+!.zed/settings.json

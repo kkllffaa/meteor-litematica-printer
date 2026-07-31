@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<profiles version="13">
+    <profile kind="CodeFormatterProfile" name="FabricModStyle" version="13">
+        <!-- dont delete manual line breaks -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.join_wrapped_lines"
+			value="false"
+		/>
+
+        <!-- wrap chained method calls to a new line -->
+        <!-- <setting
+			id="org.eclipse.jdt.core.formatter.alignment_for_selector_in_method_invocation"
+			value="84"
+		/> -->
+
+        <!-- Force every enum constant onto its own new line -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.alignment_for_enum_constants"
+			value="49"
+		/>
+
+		<!-- Insert new lines between stuff -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.blank_lines_before_method"
+			value="1"
+		/>
+        <setting
+			id="org.eclipse.jdt.core.formatter.blank_lines_before_member_type"
+			value="1"
+		/>
+		<setting
+			id="org.eclipse.jdt.core.formatter.blank_lines_before_first_class_body_declaration"
+			value="1"
+		/>
+
+		<!-- Insert a space after the opening brace in an array initializer (e.g., new Vec3[] { new Vec3... ) -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.insert_space_after_opening_brace_in_array_initializer"
+			value="insert"
+		/>
+		<!-- Insert a space before the opening brace in an array initializer -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.insert_space_before_opening_brace_in_array_initializer"
+			value="insert"
+		/>
+        <!-- Insert a space before the closing brace in an array initializer -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.insert_space_before_closing_brace_in_array_initializer"
+			value="insert"
+		/>
+
+		<!-- Indent case blocks within switch statements -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_switch"
+			value="true"
+		/>
+		<!-- Indent statements within a case block -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.indent_switchstatements_compare_to_cases"
+			value="true"
+		/>
+
+		<!-- Do not insert a space before the colon in a default statement (default:) -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_default"
+			value="do not insert"
+		/>
+        <!-- Do not insert a space before the colon in a case statement (case UP:) -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.insert_space_before_colon_in_case"
+			value="do not insert"
+		/>
+
+
+		<!-- Do not insert tabs or spaces on empty lines -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.indent_empty_lines"
+			value="false"
+		/>
+
+
+        <!-- Disable all comment formatting -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.comment.format_line_comments"
+			value="false"
+		/>
+                <setting
+			id="org.eclipse.jdt.core.formatter.comment.format_block_comments"
+			value="false"
+		/>
+                <setting
+			id="org.eclipse.jdt.core.formatter.comment.format_javadoc_comments"
+			value="false"
+		/>
+
+		<!-- Use tabs -->
+        <setting
+			id="org.eclipse.jdt.core.formatter.tabulation.char"
+			value="tab"
+		/>
+    </profile>
+</profiles>
