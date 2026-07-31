@@ -31,7 +31,7 @@ dependencies {
 	// Meteor
 	implementation "meteordevelopment:meteor-client:${project.minecraft_version}-SNAPSHOT"
 
-	// Litematica TODO: make it not error on compile?
+	// Litematica
 	implementation("com.github.sakura-ryoko:litematica:${project.minecraft_version}-${project.litematica_version}") {
 		exclude group: "fi.dy.masa.malilib"
 	}

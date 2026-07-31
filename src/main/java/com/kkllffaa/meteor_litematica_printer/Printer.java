@@ -165,9 +165,9 @@ public class Printer extends Module {
 			.visible(renderBlocks::get)
 			.build());
 
-	private final Setting<SettingColor> colour = sgRendering.add(new ColorSetting.Builder()
-			.name("colour")
-			.description("The cubes colour.")
+	private final Setting<SettingColor> color = sgRendering.add(new ColorSetting.Builder()
+			.name("color")
+			.description("The cubes color.")
 			.defaultValue(new SettingColor(95, 190, 255))
 			.visible(renderBlocks::get)
 			.build());
@@ -286,8 +286,6 @@ public class Printer extends Module {
 			});
 
 			BlockIterator.after(() -> {
-				//if (!tosort.isEmpty()) info(tosort.toString());
-
 				if (firstAlgorithm.get() != SortAlgorithm.None) {
 					if (firstAlgorithm.get().applySecondSorting) {
 						if (secondAlgorithm.get() != SortingSecond.None) {
@@ -309,10 +307,8 @@ public class Printer extends Module {
 					boolean placedBlock = false;
 
 					if (useOffhand.get()) {
-						// Offhand benutzen
 						placedBlock = switchItemOffhand(item, () -> place(state, pos));
 					} else {
-						// Normale Hand benutzen
 						placedBlock = switchItem(item, state, () -> place(state, pos));
 					}
 					if (placedBlock) {
@@ -499,8 +495,8 @@ public class Printer extends Module {
 	@EventHandler
 	private void onRender(Render3DEvent event) {
 		placed_fade.forEach(s -> {
-			Color a = new Color(colour.get().r, colour.get().g, colour.get().b,
-					(int) (((float) s.getA() / (float) fadeTime.get()) * colour.get().a));
+			Color a = new Color(color.get().r, color.get().g, color.get().b,
+					(int) (((float) s.getA() / (float) fadeTime.get()) * color.get().a));
 			event.renderer.box(s.getB(), a, null, ShapeMode.Sides, 0);
 		});
 	}
